@@ -105,7 +105,6 @@
       <div class="flex-shrink-0">
         <select
           [(ngModel)]="selectedProjetId"
-          (ngModelChange)="selectProjet($event)"
           class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white min-w-[220px]">
           <option [ngValue]="null">— Sélectionner un projet —</option>
           <option *ngFor="let p of projets" [ngValue]="p.id">
@@ -124,18 +123,18 @@
     </div>
 
     <!-- Données du projet sélectionné -->
-    <div *ngIf="selectedProjet" class="p-6">
+    <div *ngIf="selectedProjet as sp" class="p-6">
 
       <!-- Info projet + KPIs rapides -->
       <div class="flex flex-wrap items-start gap-4 mb-6">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
-            <h3 class="text-base font-bold text-gray-900 truncate">{{ selectedProjet.nom }}</h3>
-            <span class="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0" [ngClass]="getStatutClass(selectedProjet.statutValidation)">
-              {{ getStatutLabel(selectedProjet.statutValidation) }}
+            <h3 class="text-base font-bold text-gray-900 truncate">{{ sp.nom }}</h3>
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0" [ngClass]="getStatutClass(sp.statutValidation)">
+              {{ getStatutLabel(sp.statutValidation) }}
             </span>
           </div>
-          <p class="text-sm text-gray-500">{{ selectedProjet.client || 'Client non renseigné' }} · {{ selectedProjet.codeProjet }}</p>
+          <p class="text-sm text-gray-500">{{ sp.client || 'Client non renseigné' }} · {{ sp.codeProjet }}</p>
         </div>
         <div class="flex gap-3 flex-shrink-0">
           <div class="text-center px-4 py-2 bg-blue-50 rounded-lg">
@@ -146,7 +145,7 @@
             <p class="text-2xl font-bold text-green-700">{{ selectedTauxValidation }}%</p>
             <p class="text-xs text-green-500">validées</p>
           </div>
-          <button (click)="goToProjet(selectedProjet.id)"
+          <button (click)="goToProjet(sp.id)"
             class="self-center px-4 py-2 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors">
             Ouvrir →
           </button>
