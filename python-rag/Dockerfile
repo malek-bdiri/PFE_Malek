@@ -1,20 +1,19 @@
+# syntax=docker/dockerfile:1
 FROM python:3.11-slim
 WORKDIR /app
 
-# System libs required by easyocr/OpenCV
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 
-# Install CPU-only PyTorch first so easyocr/sentence-transformers
-# don't pull the full CUDA build (~2.5 GB)
-RUN pip install --no-cache-dir \
-    torch torchvision \
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install torch torchvision \
     --index-url https://download.pytorch.org/whl/cpu
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
 
 COPY src ./src
 COPY .env.example ./.env

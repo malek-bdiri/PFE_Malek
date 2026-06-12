@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        DOCKER_BUILDKIT   = '1'
         DOCKERHUB_USER    = 'malek1010'
         FRONTEND_IMAGE    = "${DOCKERHUB_USER}/pfe-frontend"
         BACKEND_IMAGE     = "${DOCKERHUB_USER}/pfe-backend"

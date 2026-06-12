@@ -1,12 +1,12 @@
-# Stage 1: Build Angular app
+# syntax=docker/dockerfile:1
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --legacy-peer-deps
 COPY . .
 RUN npm run build -- --configuration production
 
-# Stage 2: Serve with nginx
 FROM nginx:alpine
 COPY --from=builder /app/dist/momsoft-frontend /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
