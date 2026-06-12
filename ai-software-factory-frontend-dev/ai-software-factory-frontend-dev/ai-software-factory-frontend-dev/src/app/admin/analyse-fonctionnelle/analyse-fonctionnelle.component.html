@@ -1,0 +1,63 @@
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Analyses Fonctionnelles</h1>
+    <a routerLink="/admin/analyse/new"
+       class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+      + Nouvelle analyse
+    </a>
+  </div>
+
+  <div class="flex gap-3 mb-4">
+    <input type="text" placeholder="Rechercher..." [(ngModel)]="searchTerm"
+           (input)="applyFilters()"
+           class="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1">
+    <select [(ngModel)]="selectedStatut" (change)="applyFilters()"
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+      <option value="">Tous les statuts</option>
+      <option *ngFor="let s of statuts" [value]="s">{{ s }}</option>
+    </select>
+    <select [(ngModel)]="selectedClient" (change)="applyFilters()"
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+      <option value="">Tous les clients</option>
+      <option *ngFor="let c of clients" [value]="c">{{ c }}</option>
+    </select>
+  </div>
+
+  <div class="bg-white rounded-xl shadow overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+        <tr>
+          <th class="px-4 py-3 text-left">Code</th>
+          <th class="px-4 py-3 text-left">Projet</th>
+          <th class="px-4 py-3 text-left">Client</th>
+          <th class="px-4 py-3 text-left">Statut</th>
+          <th class="px-4 py-3 text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let a of filteredAnalyses" class="border-t hover:bg-gray-50">
+          <td class="px-4 py-3 font-mono text-blue-600">{{ a.code }}</td>
+          <td class="px-4 py-3">{{ a.projet?.nom }}</td>
+          <td class="px-4 py-3 text-gray-500">{{ a.projet?.client }}</td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-1 rounded-full text-xs font-medium"
+                  [ngClass]="getStatutClass(a.statut)">
+              {{ a.statut }}
+            </span>
+          </td>
+          <td class="px-4 py-3 flex gap-2">
+            <button (click)="viewDetails(a.id)"
+                    class="text-blue-600 hover:underline text-xs">Voir</button>
+            <button (click)="deleteAnalysis(a.id)"
+                    class="text-red-500 hover:underline text-xs">Supprimer</button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredAnalyses.length === 0">
+          <td colspan="5" class="px-4 py-8 text-center text-gray-400">
+            Aucune analyse fonctionnelle trouvée.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
