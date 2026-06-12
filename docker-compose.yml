@@ -23,12 +23,14 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.1
     container_name: pfe-keycloak
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     ports:
       - "8080:8080"
+    volumes:
+      - ./keycloak/realm-momsoft.json:/opt/keycloak/data/import/realm-momsoft.json
 
   # ─── Python RAG (FastAPI) ─────────────────────────────────
   python-rag:
@@ -51,15 +53,7 @@ services:
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/pfe?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
-      SPRING_APPLICATION_JSON: >-
-        {
-          "rag.api.base-url": "http://python-rag:8000",
-          "keycloak.server-url": "http://keycloak:8080",
-          "keycloak.token-url": "http://keycloak:8080/realms/momsoft/protocol/openid-connect/token",
-          "spring.security.oauth2.resourceserver.jwt.issuer-uri": "http://keycloak:8080/realms/momsoft",
-          "app.frontend.url": "http://localhost:4200",
-          "n8n.webhook.base-url": "http://localhost:5678"
-        }
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://keycloak:8080/realms/momsoft/protocol/openid-connect/certs"
     depends_on:
       mysql:
         condition: service_healthy
