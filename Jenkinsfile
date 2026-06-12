@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_USER    = 'malekbdiri'
+        DOCKERHUB_USER    = 'malek1010'
         FRONTEND_IMAGE    = "${DOCKERHUB_USER}/pfe-frontend"
         BACKEND_IMAGE     = "${DOCKERHUB_USER}/pfe-backend"
         PYTHON_RAG_IMAGE  = "${DOCKERHUB_USER}/pfe-python-rag"
@@ -85,14 +85,14 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS')]) {
                     sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
 
-                    sh "docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}"
-                    sh "docker push ${FRONTEND_IMAGE}:latest"
+                    retry(3) { sh "docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}" }
+                    retry(3) { sh "docker push ${FRONTEND_IMAGE}:latest" }
 
-                    sh "docker push ${BACKEND_IMAGE}:${IMAGE_TAG}"
-                    sh "docker push ${BACKEND_IMAGE}:latest"
+                    retry(3) { sh "docker push ${BACKEND_IMAGE}:${IMAGE_TAG}" }
+                    retry(3) { sh "docker push ${BACKEND_IMAGE}:latest" }
 
-                    sh "docker push ${PYTHON_RAG_IMAGE}:${IMAGE_TAG}"
-                    sh "docker push ${PYTHON_RAG_IMAGE}:latest"
+                    retry(3) { sh "docker push ${PYTHON_RAG_IMAGE}:${IMAGE_TAG}" }
+                    retry(3) { sh "docker push ${PYTHON_RAG_IMAGE}:latest" }
                 }
             }
         }
