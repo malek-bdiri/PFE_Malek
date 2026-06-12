@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: pfe-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: pfe
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.1
+    container_name: pfe-keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+
+  python-rag:
+    image: malek1010/pfe-python-rag:latest
+    container_name: pfe-python-rag
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./python-rag/.env
+
+  backend:
+    image: malek1010/pfe-backend:latest
+    container_name: pfe-backend
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/pfe?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_APPLICATION_JSON: >-
+        {
+          "rag.api.base-url": "http://python-rag:8000",
+          "keycloak.server-url": "http://keycloak:8080",
+          "keycloak.token-url": "http://keycloak:8080/realms/momsoft/protocol/openid-connect/token",
+          "spring.security.oauth2.resourceserver.jwt.issuer-uri": "http://keycloak:8080/realms/momsoft",
+          "app.frontend.url": "http://localhost:4200",
+          "n8n.webhook.base-url": "http://localhost:5678"
+        }
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+
+  frontend:
+    image: malek1010/pfe-frontend:latest
+    container_name: pfe-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+      - python-rag
+
+volumes:
+  mysql_data:
