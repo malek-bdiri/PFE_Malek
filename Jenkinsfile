@@ -76,7 +76,7 @@ pipeline {
         }
 
         // ─────────────────────────────────────────────
-        stage('Deploy') {
+        stage('Push') {
         // ─────────────────────────────────────────────
             steps {
                 withCredentials([usernamePassword(
@@ -96,6 +96,61 @@ pipeline {
                 }
             }
         }
+
+        // ─────────────────────────────────────────────
+        stage('Deploy') {
+        // ─────────────────────────────────────────────
+            steps {
+                // Préparer le .env du RAG (credential Jenkins "python_rag_env")
+                withCredentials([file(credentialsId: 'python_rag_env', variable: 'RAG_ENV')]) {
+                    sh "cp \$RAG_ENV ${PYTHON_DIR}/.env"
+                }
+
+                // Arrêter les containers existants et relancer avec les nouvelles images
+                sh """
+                    docker-compose -f docker-compose.prod.yml down --remove-orphans || true
+                    docker-compose -f docker-compose.prod.yml pull
+                    docker-compose -f docker-compose.prod.yml up -d
+                """
+
+                // Attendre que Keycloak soit prêt puis créer le realm momsoft
+                sh '''
+                    echo "Attente de Keycloak..."
+                    for i in $(seq 1 24); do
+                        STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/realms/master 2>/dev/null || echo "000")
+                        if [ "$STATUS" = "200" ]; then
+                            echo "Keycloak prêt."
+                            break
+                        fi
+                        echo "  tentative $i/24 — statut $STATUS"
+                        sleep 10
+                    done
+
+                    TOKEN=$(curl -s -X POST http://localhost:8080/realms/master/protocol/openid-connect/token \
+                        -d "grant_type=password&client_id=admin-cli&username=admin&password=admin" \
+                        | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+
+                    if [ -z "$TOKEN" ]; then
+                        echo "Impossible d\'obtenir un token Keycloak — realm non créé."
+                        exit 0
+                    fi
+
+                    REALM_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+                        -H "Authorization: Bearer $TOKEN" \
+                        http://localhost:8080/admin/realms/momsoft)
+
+                    if [ "$REALM_STATUS" = "200" ]; then
+                        echo "Realm momsoft existe déjà."
+                    else
+                        curl -s -X POST http://localhost:8080/admin/realms \
+                            -H "Authorization: Bearer $TOKEN" \
+                            -H "Content-Type: application/json" \
+                            -d @keycloak/realm-momsoft.json
+                        echo "Realm momsoft créé."
+                    fi
+                '''
+            }
+        }
     }
 
     post {
@@ -103,7 +158,7 @@ pipeline {
             sh 'docker logout || true'
         }
         success {
-            echo "Pipeline terminé avec succès — images poussées sur DockerHub avec le tag ${IMAGE_TAG}"
+            echo "Pipeline terminé — build ${IMAGE_TAG} déployé sur http://localhost:4200"
         }
         failure {
             echo "Pipeline échoué — vérifier les logs ci-dessus"

@@ -1,0 +1,67 @@
+{
+  "realm": "momsoft",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "ADMIN", "description": "Administrateur" },
+      { "name": "USER",  "description": "Utilisateur standard" },
+      { "name": "MANAGER", "description": "Manager" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "momsoft-rest-api",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "T0076YKmZyv1Bk2kJ1IoCThGqHt0L3L6",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://localhost:4200/*",
+        "http://localhost:8081/*"
+      ],
+      "webOrigins": [
+        "http://localhost:4200",
+        "http://localhost:8081"
+      ],
+      "bearerOnly": false
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "malekbdiri06@gmail.com",
+      "firstName": "Admin",
+      "lastName": "MOMsoft",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ADMIN", "USER"]
+    },
+    {
+      "username": "user",
+      "email": "user@momsoft.com",
+      "firstName": "User",
+      "lastName": "Test",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["USER"]
+    }
+  ]
+}
