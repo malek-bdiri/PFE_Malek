@@ -1,0 +1,112 @@
+<div class="p-6 space-y-8">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold text-gray-800">Composantes & TJM</h1>
+    <div class="flex gap-2">
+      <button (click)="importer()" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+        Importer
+      </button>
+      <button (click)="exporter()" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+        Exporter
+      </button>
+      <button (click)="openAddModal()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        + Nouvelle composante
+      </button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-xl shadow overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+        <tr>
+          <th class="px-4 py-3 text-left">Code</th>
+          <th class="px-4 py-3 text-left">Libellé</th>
+          <th class="px-4 py-3 text-left">Description</th>
+          <th class="px-4 py-3 text-left">Statut</th>
+          <th class="px-4 py-3 text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of composantes" class="border-t hover:bg-gray-50">
+          <td class="px-4 py-3 font-mono text-blue-600">{{ c.code }}</td>
+          <td class="px-4 py-3 font-medium">{{ c.libelle }}</td>
+          <td class="px-4 py-3 text-gray-500">{{ c.description }}</td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-1 rounded-full text-xs font-medium"
+                  [ngClass]="c.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
+              {{ c.active ? 'Actif' : 'Inactif' }}
+            </span>
+          </td>
+          <td class="px-4 py-3 flex gap-2">
+            <button (click)="toggleActive(c)" class="text-xs text-gray-500 hover:underline">Toggle</button>
+            <button (click)="openEditModal(c)" class="text-xs text-blue-600 hover:underline">Modifier</button>
+            <button (click)="deleteComposante(c.id)" class="text-xs text-red-500 hover:underline">Supprimer</button>
+          </td>
+        </tr>
+        <tr *ngIf="composantes.length === 0">
+          <td colspan="5" class="px-4 py-8 text-center text-gray-400">Aucune composante.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TJM -->
+  <div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-base font-semibold text-gray-800 mb-4">TJM Standard</h2>
+    <div class="grid grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">TJM Min (€)</label>
+        <input type="number" [(ngModel)]="tjm.tjmMin" class="w-full border rounded-lg p-2 text-sm">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">TJM Max (€)</label>
+        <input type="number" [(ngModel)]="tjm.tjmMax" class="w-full border rounded-lg p-2 text-sm">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Devise</label>
+        <select [(ngModel)]="tjm.devise" class="w-full border rounded-lg p-2 text-sm">
+          <option *ngFor="let d of devises" [value]="d.code">{{ d.label }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex justify-end mt-4">
+      <button (click)="saveTjm()" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+        Enregistrer
+      </button>
+      <span *ngIf="tjmSaved" class="ml-3 text-sm text-green-600 self-center">Sauvegardé ✓</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div *ngIf="showModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-xl w-[440px] p-6 space-y-4">
+    <h3 class="text-base font-semibold">{{ isEditing ? 'Modifier' : 'Nouvelle' }} composante</h3>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Code *</label>
+      <input type="text" [(ngModel)]="currentComposante.code" class="w-full border rounded-lg p-2 text-sm">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Libellé *</label>
+      <input type="text" [(ngModel)]="currentComposante.libelle" class="w-full border rounded-lg p-2 text-sm">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+      <textarea [(ngModel)]="currentComposante.description" rows="2"
+                class="w-full border rounded-lg p-2 text-sm"></textarea>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="checkbox" [(ngModel)]="currentComposante.active" id="activeCheck">
+      <label for="activeCheck" class="text-sm text-gray-700">Active</label>
+    </div>
+    <div class="flex justify-end gap-2 pt-2">
+      <button (click)="closeModal()" class="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">Annuler</button>
+      <button (click)="saveComposante()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+        {{ isEditing ? 'Enregistrer' : 'Ajouter' }}
+      </button>
+    </div>
+  </div>
+</div>
