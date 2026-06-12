@@ -1,0 +1,108 @@
+<!-- Bannière lecture seule -->
+<div *ngIf="isReadOnly" class="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-5 py-3 flex items-center gap-3">
+  <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+  </svg>
+  <span class="text-sm text-amber-800 font-medium">Mode lecture seule — vous pouvez consulter les paramètres mais pas les modifier.</span>
+</div>
+
+<!-- Tabs de navigation secondaire -->
+<div class="bg-white rounded-lg shadow-sm mb-6">
+  <div class="border-b border-gray-200">
+    <nav class="flex space-x-8 px-6" aria-label="Tabs">
+      <button
+        (click)="setActiveTab('clients')"
+        [class.border-blue-500]="activeTab === 'clients'"
+        [class.text-blue-600]="activeTab === 'clients'"
+        [class.border-transparent]="activeTab !== 'clients'"
+        [class.text-gray-500]="activeTab !== 'clients'"
+        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+        Clients
+      </button>
+      <button
+        (click)="setActiveTab('produits')"
+        [class.border-blue-500]="activeTab === 'produits'"
+        [class.text-blue-600]="activeTab === 'produits'"
+        [class.border-transparent]="activeTab !== 'produits'"
+        [class.text-gray-500]="activeTab !== 'produits'"
+        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+        Produits
+      </button>
+      <button
+        (click)="setActiveTab('modules')"
+        [class.border-blue-500]="activeTab === 'modules'"
+        [class.text-blue-600]="activeTab === 'modules'"
+        [class.border-transparent]="activeTab !== 'modules'"
+        [class.text-gray-500]="activeTab !== 'modules'"
+        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+        Modules
+      </button>
+      <button
+        (click)="setActiveTab('utilisateurs')"
+        [class.border-blue-500]="activeTab === 'utilisateurs'"
+        [class.text-blue-600]="activeTab === 'utilisateurs'"
+        [class.border-transparent]="activeTab !== 'utilisateurs'"
+        [class.text-gray-500]="activeTab !== 'utilisateurs'"
+        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+        Utilisateurs
+      </button>
+      <button
+        (click)="setActiveTab('hardware')"
+        [class.border-blue-500]="activeTab === 'hardware'"
+        [class.text-blue-600]="activeTab === 'hardware'"
+        [class.border-transparent]="activeTab !== 'hardware'"
+        [class.text-gray-500]="activeTab !== 'hardware'"
+        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+        Hardware
+      </button>
+      <button
+        (click)="setActiveTab('licence')"
+        [class.border-blue-500]="activeTab === 'licence'"
+        [class.text-blue-600]="activeTab === 'licence'"
+        [class.border-transparent]="activeTab !== 'licence'"
+        [class.text-gray-500]="activeTab !== 'licence'"
+        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+        Licence
+      </button>
+      <button
+        (click)="setActiveTab('composantes-tjm')"
+        [class.border-blue-500]="activeTab === 'composantes-tjm'"
+        [class.text-blue-600]="activeTab === 'composantes-tjm'"
+        [class.border-transparent]="activeTab !== 'composantes-tjm'"
+        [class.text-gray-500]="activeTab !== 'composantes-tjm'"
+        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+        Composantes &amp; TJM
+      </button>
+      <button
+        (click)="setActiveTab('calendrier')"
+        [class.border-blue-500]="activeTab === 'calendrier'"
+        [class.text-blue-600]="activeTab === 'calendrier'"
+        [class.border-transparent]="activeTab !== 'calendrier'"
+        [class.text-gray-500]="activeTab !== 'calendrier'"
+        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+        Calendrier
+      </button>
+    </nav>
+  </div>
+</div>
+
+<!-- Tab content -->
+<div class="bg-white rounded-lg shadow-sm p-6 relative">
+  <!-- Overlay lecture seule : bloque tous les clics sans masquer le contenu -->
+  <div *ngIf="isReadOnly"
+       class="absolute inset-0 z-10 rounded-lg cursor-not-allowed"
+       title="Lecture seule — modification non autorisée"></div>
+  <div [class.opacity-60]="isReadOnly" [class.select-none]="isReadOnly">
+    <app-clients *ngIf="activeTab === 'clients'"></app-clients>
+    <app-produits *ngIf="activeTab === 'produits'"></app-produits>
+    <app-modules *ngIf="activeTab === 'modules'"></app-modules>
+    <app-utilisateurs *ngIf="activeTab === 'utilisateurs'"></app-utilisateurs>
+    <app-hardware-configuration *ngIf="activeTab === 'hardware'"></app-hardware-configuration>
+    <app-licence *ngIf="activeTab === 'licence'"></app-licence>
+    <app-composantes-tjm *ngIf="activeTab === 'composantes-tjm'"></app-composantes-tjm>
+    <app-calendrier *ngIf="activeTab === 'calendrier'"></app-calendrier>
+  </div>
+</div>

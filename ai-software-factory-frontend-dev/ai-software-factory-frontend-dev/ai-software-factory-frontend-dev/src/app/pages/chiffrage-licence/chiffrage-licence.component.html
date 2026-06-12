@@ -1,0 +1,318 @@
+<div class="flex gap-6">
+
+  <!-- Colonne principale -->
+  <div class="flex-1">
+
+    <div class="mb-4">
+      <h2 class="text-2xl font-bold text-gray-900">Chiffrage Licence</h2>
+      <p class="text-sm text-gray-500 mt-1">Configuration et estimation des coûts de licences du projet</p>
+    </div>
+
+    <!-- Configuration -->
+    <div class="bg-white border border-gray-200 rounded-lg p-6 mb-4">
+      <h3 class="text-base font-semibold text-gray-800 mb-4">Configuration de la licence</h3>
+      <div class="grid grid-cols-3 gap-6">
+
+        <!-- Produit -->
+        <div class="relative">
+          <label class="absolute -top-2 left-3 bg-white px-1 text-xs text-gray-500">Produit *</label>
+          <select [(ngModel)]="selectedProduitId" (ngModelChange)="onProduitChange()"
+            class="w-full border border-gray-300 rounded-md px-3 py-3 text-sm focus:ring-1 focus:ring-blue-500 appearance-none">
+            <option [ngValue]="null">Sélectionner un produit...</option>
+            <option *ngFor="let p of produits" [ngValue]="p.id">{{ p.nom }}</option>
+          </select>
+        </div>
+
+        <!-- Mode tarification -->
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">Mode de tarification</label>
+          <div class="flex border border-gray-300 rounded-md overflow-hidden">
+            <button (click)="onModeChange('ONESHOT')"
+              [class.bg-gray-200]="pricingMode === 'ONESHOT'"
+              [class.font-semibold]="pricingMode === 'ONESHOT'"
+              [class.bg-white]="pricingMode !== 'ONESHOT'"
+              class="flex-1 py-2 text-sm uppercase tracking-wide transition-colors">
+              ONESHOT
+            </button>
+            <button (click)="onModeChange('YEARLY')"
+              [class.bg-gray-200]="pricingMode === 'YEARLY'"
+              [class.font-semibold]="pricingMode === 'YEARLY'"
+              [class.bg-white]="pricingMode !== 'YEARLY'"
+              class="flex-1 py-2 text-sm uppercase tracking-wide transition-colors">
+              YEARLY
+            </button>
+          </div>
+        </div>
+
+        <!-- Nombre utilisateurs -->
+        <div class="relative">
+          <label class="absolute -top-2 left-3 bg-white px-1 text-xs text-gray-500">Nombre d'utilisateurs *</label>
+          <input type="number" [(ngModel)]="nbUsers" (ngModelChange)="onNbUsersChange()" min="1"
+            class="w-full border border-gray-300 rounded-md px-3 py-3 text-sm focus:ring-1 focus:ring-blue-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- Remise globale -->
+    <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4 flex items-center gap-4">
+      <button type="button"
+        (click)="applyGlobalDiscount = !applyGlobalDiscount; applyGlobalDiscountChange()"
+        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none"
+        [class.bg-blue-600]="applyGlobalDiscount"
+        [class.bg-gray-200]="!applyGlobalDiscount">
+        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200"
+          [class.translate-x-5]="applyGlobalDiscount"
+          [class.translate-x-0]="!applyGlobalDiscount">
+        </span>
+      </button>
+      <span class="text-sm text-gray-700">Appliquer une remise globale</span>
+      <div *ngIf="applyGlobalDiscount" class="flex items-center gap-2 ml-4">
+        <input type="number" [(ngModel)]="globalDiscountPercent"
+          (ngModelChange)="onGlobalDiscountChange()"
+          min="0" max="100" placeholder="0"
+          class="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-center">
+        <span class="text-sm text-gray-500">%</span>
+      </div>
+    </div>
+
+    <!-- Bouton ajouter modules -->
+    <div class="mb-4">
+      <button (click)="openModuleModal()"
+        class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        AJOUTER DES MODULES
+      </button>
+    </div>
+
+    <!-- Tableau modules -->
+    <div class="bg-white border border-gray-200 rounded-lg overflow-x-auto mb-4">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Module</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Users</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pricing Tier</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Discount (%)</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Discount Amount</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Final Subtotal</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr *ngFor="let ligne of lignes; let i = index">
+
+            <td class="px-4 py-4">
+              <div class="font-medium text-gray-900">{{ ligne.moduleNom }}</div>
+              <span *ngIf="ligne.obligatoire"
+                class="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-blue-600 text-white rounded-full">
+                Obligatoire
+              </span>
+            </td>
+
+            <td class="px-4 py-4 text-center text-gray-700">{{ ligne.nbUsers }}</td>
+
+            <td class="px-4 py-4 text-gray-500">{{ ligne.pricingTierLabel }}</td>
+
+            <td class="px-4 py-4 text-right">
+              <input type="number"
+                [value]="ligne.prixUnitaire"
+                (input)="updatePrixUnitaire(ligne, +$any($event.target).value)"
+                min="0"
+                class="w-24 text-right border border-gray-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-400">
+            </td>
+
+            <td class="px-4 py-4 text-right text-gray-700">
+              {{ ligne.subtotal | number:'1.2-2' }} €
+            </td>
+
+            <td class="px-4 py-4 text-center">
+              <input type="number"
+                [value]="ligne.remisePercent"
+                (input)="updateRemise(ligne, +$any($event.target).value)"
+                [disabled]="applyGlobalDiscount"
+                min="0" max="100"
+                class="w-16 text-center border border-gray-300 rounded px-1 py-1 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed">
+            </td>
+
+            <td class="px-4 py-4 text-right text-red-500">
+              -{{ ligne.remiseAmount | number:'1.2-2' }} €
+            </td>
+
+            <td class="px-4 py-4 text-right font-medium text-blue-600">
+              {{ ligne.finalSubtotal | number:'1.2-2' }} €
+            </td>
+
+            <td class="px-4 py-4 text-center">
+              <div class="flex items-center justify-center gap-2">
+                <button class="text-blue-500 hover:text-blue-700">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                </button>
+                <button (click)="removeLigne(i)"
+                  [disabled]="ligne.obligatoire"
+                  [class.opacity-30]="ligne.obligatoire"
+                  [class.cursor-not-allowed]="ligne.obligatoire"
+                  class="text-gray-400 hover:text-gray-600 disabled:pointer-events-none">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="lignes.length === 0">
+            <td colspan="9" class="px-4 py-8 text-center text-sm text-gray-400">
+              Aucun module ajouté. Sélectionnez un produit et cliquez sur "Ajouter des modules".
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bouton sauvegarder -->
+    <div class="flex justify-end">
+      <button (click)="sauvegarder()" [disabled]="isSaving || lignes.length === 0"
+        class="px-6 py-2 bg-slate-900 text-white rounded-md text-sm font-medium hover:bg-slate-800 disabled:opacity-50">
+        {{ isSaving ? 'Sauvegarde...' : 'Sauvegarder' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Licence Summary -->
+  <div class="w-72 flex-shrink-0">
+    <div class="bg-white border-2 border-blue-500 rounded-lg p-6 sticky top-4">
+      <h3 class="text-lg font-bold text-gray-900 mb-4">Licence Summary</h3>
+      <div class="space-y-3 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-600">Base License Total</span>
+          <span class="font-medium">{{ baseTotal | number:'1.2-2' }} €</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Discount</span>
+          <span class="text-red-500">-{{ discountTotal | number:'1.2-2' }} €</span>
+        </div>
+        <div class="border-t border-gray-200 pt-3 flex justify-between">
+          <span class="font-bold text-gray-900">
+            Total License {{ pricingMode === 'YEARLY' ? 'Yearly' : 'Oneshot' }}
+          </span>
+          <span class="font-bold text-blue-600 text-lg">
+            {{ totalLicence | number:'1.2-2' }} €
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="pricingMode === 'YEARLY'"
+        class="mt-4 p-3 bg-gray-50 rounded-md text-xs text-gray-500">
+        <strong>Coût annuel récurrent</strong><br>
+        Ce montant sera facturé chaque année.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal sélection modules -->
+<div *ngIf="showModuleModal" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75" (click)="showModuleModal=false"></div>
+    <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl z-10">
+
+      <!-- Header -->
+      <div class="px-6 pt-6 pb-4">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Sélection des modules</h3>
+
+        <!-- Barre de recherche -->
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" [(ngModel)]="moduleSearchTerm"
+            placeholder="Rechercher un module..."
+            class="w-full border border-gray-200 rounded-lg pl-9 pr-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="px-6 pb-2 max-h-80 overflow-y-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200">
+              <th class="w-10 pb-2">
+                <!-- vide -->
+              </th>
+              <th class="pb-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Module</th>
+              <th class="pb-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Status</th>
+              <th class="pb-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Paliers disponibles</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let m of filteredModules"
+              [class.opacity-60]="isAlreadyAdded(m.id)"
+              [class.cursor-pointer]="!isAlreadyAdded(m.id)"
+              (click)="!isAlreadyAdded(m.id) && toggleModule(m.id)"
+              class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+
+              <td class="py-3 pr-2">
+                <input type="checkbox"
+                  [checked]="selectedModuleIds.has(m.id) || isAlreadyAdded(m.id)"
+                  [disabled]="isAlreadyAdded(m.id)"
+                  (click)="$event.stopPropagation()"
+                  (change)="!isAlreadyAdded(m.id) && toggleModule(m.id)"
+                  class="h-4 w-4 rounded border-gray-300 text-blue-600 cursor-pointer">
+              </td>
+
+              <td class="py-3 pr-4">
+                <span class="font-medium text-gray-900">{{ m.nom }}</span>
+              </td>
+
+              <td class="py-3 pr-4">
+                <span *ngIf="m.obligatoire"
+                  class="inline-block px-2.5 py-0.5 text-xs font-medium bg-blue-600 text-white rounded-full">
+                  Obligatoire
+                </span>
+                <span *ngIf="isAlreadyAdded(m.id) && !m.obligatoire"
+                  class="inline-block px-2.5 py-0.5 text-xs font-medium bg-gray-200 text-gray-600 rounded-full">
+                  Déjà ajouté
+                </span>
+              </td>
+
+              <td class="py-3 text-gray-500 text-sm">
+                {{ paliersCount > 0 ? paliersCount + ' paliers' : '—' }}
+              </td>
+            </tr>
+
+            <tr *ngIf="filteredModules.length === 0">
+              <td colspan="4" class="py-8 text-center text-sm text-gray-400">
+                Aucun module trouvé.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+        <button (click)="showModuleModal=false"
+          class="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+          ANNULER
+        </button>
+        <button (click)="confirmerModules()"
+          [disabled]="selectedModuleIds.size === 0"
+          class="px-5 py-2 text-sm font-medium rounded text-gray-600 bg-gray-200 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+          AJOUTER
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,210 @@
+<div class="nouveau-projet-container">
+
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <div class="page-header">
+    <h1>Nouveau projet – Génération des besoins</h1>
+    <p class="subtitle">Créez un nouveau projet et générez automatiquement les besoins via l'IA</p>
+    <div class="mode-badge">
+      <span class="ai-icon">🤖</span>
+      <span>Mode IA — L'IA générera automatiquement les exigences à partir de vos documents</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SECTION 1 : INFOS PROJET ═══════════════ -->
+  <section class="form-section">
+    <h2><span class="section-number">1</span> Informations projet</h2>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="projectName">Nom du projet <span class="required">*</span></label>
+        <input id="projectName" type="text" [(ngModel)]="projectName"
+               placeholder="Ex: Module CRM - Gestion Clients" />
+      </div>
+
+      <div class="form-group">
+        <label for="projectId">Identifiant projet <span class="required">*</span></label>
+        <input id="projectId" type="text" [(ngModel)]="projectId"
+               placeholder="Ex: PRJ-2024-001" />
+      </div>
+
+      <div class="form-group">
+        <label for="clientName">Client <span class="required">*</span></label>
+        <input id="clientName" type="text" [(ngModel)]="clientName"
+               placeholder="Nom du client" />
+      </div>
+
+      <div class="form-group">
+        <label for="language">Langue de génération des exigences</label>
+        <select id="language" [(ngModel)]="language">
+          <option *ngFor="let lang of languages" [value]="lang">{{ lang }}</option>
+        </select>
+        <small class="hint">La langue sélectionnée sera utilisée pour la génération des exigences et les livrables.</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ SECTION 2 : CONTEXTE PRODUIT ═══════════════ -->
+  <section class="form-section">
+    <h2><span class="section-number">2</span> Contexte produit</h2>
+    <p class="section-desc">Le produit sélectionné permet à l'IA de comprendre le contexte métier et d'adapter la génération des exigences en conséquence.</p>
+
+    <div class="form-group">
+      <label for="productName">Produit de l'entreprise <span class="required">*</span></label>
+      <select id="productName" [(ngModel)]="productName">
+        <option *ngFor="let p of products" [value]="p">{{ p }}</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- ═══════════════ SECTION 3 : DOCUMENTS ═══════════════ -->
+  <section class="form-section">
+    <h2><span class="section-number">3</span> Documents</h2>
+
+    <label class="upload-label">Cahier des charges client (CdC)</label>
+
+    <!-- Zone de drop -->
+    <div class="drop-zone"
+         [class.drag-over]="isDragOver"
+         [class.has-file]="!!selectedFile"
+         (dragover)="onDragOver($event)"
+         (dragleave)="onDragLeave($event)"
+         (drop)="onDrop($event)"
+         (click)="fileInput.click()">
+
+      <input #fileInput type="file" accept=".pdf,.docx,.txt" hidden
+             (change)="onFileSelected($event)" />
+
+      <ng-container *ngIf="!selectedFile">
+        <div class="drop-icon">📄</div>
+        <p class="drop-text">Glissez-déposez ou <span class="link">cliquez pour sélectionner</span></p>
+        <p class="drop-hint">PDF, DOCX, TXT (max 10 Mo)</p>
+      </ng-container>
+
+      <ng-container *ngIf="selectedFile">
+        <div class="file-info">
+          <span class="file-icon">📎</span>
+          <span class="file-name">{{ selectedFile.name }}</span>
+          <span class="file-size">({{ formatFileSize(selectedFile.size) }})</span>
+          <button class="btn-remove" (click)="removeFile(); $event.stopPropagation()">✕</button>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Bouton Générer -->
+    <button class="btn-generate" [disabled]="!canGenerate() || loading" (click)="generate()">
+      <ng-container *ngIf="!loading">
+        🚀 Générer les exigences via l'IA
+      </ng-container>
+      <ng-container *ngIf="loading">
+        <span class="spinner"></span> Génération en cours...
+      </ng-container>
+    </button>
+
+    <!-- Erreur -->
+    <div class="error-box" *ngIf="error">
+      ⚠️ {{ error }}
+    </div>
+  </section>
+
+  <!-- ═══════════════ SECTION 4 : RÉSULTATS ═══════════════ -->
+  <section class="form-section results-section" *ngIf="generationDone">
+    <h2><span class="section-number">4</span> Exigences générées</h2>
+
+    <!-- Résumé -->
+    <div class="resume-box" *ngIf="resume">
+      <strong>Résumé :</strong> {{ resume }}
+    </div>
+
+    <p class="exigence-count">{{ exigences.length }} exigence(s) générée(s)</p>
+
+    <!-- Tableau des exigences -->
+    <div class="table-wrapper" *ngIf="exigences.length > 0">
+      <table class="exigences-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Intitulé</th>
+            <th>Objectif client</th>
+            <th>Description</th>
+            <th>Solution proposée</th>
+            <th>Limites / Hypothèses</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ex of exigences; let i = index">
+            <td class="cell-id">{{ ex.id }}</td>
+            <td><span class="type-badge" [ngClass]="getTypeBadgeClass(ex.type)">{{ ex.type }}</span></td>
+            <td>{{ ex.intitule }}</td>
+            <td>{{ ex.objectifClient }}</td>
+            <td class="cell-desc">{{ ex.description }}</td>
+            <td>{{ ex.solutionProposee }}</td>
+            <td>{{ ex.limitesHypotheses }}</td>
+            <td><button class="btn-delete" (click)="removeExigence(i)" title="Supprimer">🗑️</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bouton ajout manuel -->
+    <button class="btn-add-manual" (click)="openManualForm()">
+      ➕ Ajouter une exigence manuellement
+    </button>
+  </section>
+
+  <!-- ═══════════════ MODAL : AJOUT MANUEL ═══════════════ -->
+  <div class="modal-overlay" *ngIf="showManualForm" (click)="cancelManual()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h3>Ajouter une exigence manuelle</h3>
+
+      <div class="modal-form">
+        <div class="form-group">
+          <label>Type <span class="required">*</span></label>
+          <select [(ngModel)]="manualExigence.type">
+            <option *ngFor="let t of exigenceTypes" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Intitulé de l'exigence <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="manualExigence.intitule"
+                 placeholder="Ex: Authentification utilisateur" />
+        </div>
+
+        <div class="form-group">
+          <label>Objectif client <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="manualExigence.objectifClient"
+                 placeholder="Ex: Permettre l'accès sécurisé à l'application" />
+        </div>
+
+        <div class="form-group">
+          <label>Description <span class="required">*</span></label>
+          <textarea [(ngModel)]="manualExigence.description" rows="3"
+                    placeholder="Ex: Le système doit permettre aux utilisateurs de se connecter..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Solution proposée</label>
+          <textarea [(ngModel)]="manualExigence.solutionProposee" rows="2"
+                    placeholder="Ex: Mise en place d'un système d'authentification basé sur JWT..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Limites et hypothèses</label>
+          <textarea [(ngModel)]="manualExigence.limitesHypotheses" rows="2"
+                    placeholder="Ex: L'authentification à deux facteurs n'est pas incluse..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="cancelManual()">Annuler</button>
+        <button class="btn-confirm" (click)="addManualExigence()"
+                [disabled]="!manualExigence.intitule || !manualExigence.objectifClient || !manualExigence.description">
+          Ajouter l'exigence
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

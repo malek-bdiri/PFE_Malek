@@ -1,0 +1,255 @@
+<!-- Breadcrumb -->
+<div class="text-sm text-gray-500 mb-6">
+  <span routerLink="/admin/dashboard" class="cursor-pointer hover:text-gray-700">Tableau de bord</span>
+  <span class="mx-2">›</span>
+  <span routerLink="/admin/analyse" class="cursor-pointer hover:text-gray-700">Analyse fonctionnelle</span>
+  <span class="mx-2">›</span>
+  <span (click)="goBack()" class="cursor-pointer hover:text-gray-700">FA-{{ analysisId }}</span>
+  <span class="mx-2">›</span>
+  <span class="text-gray-900 font-medium">Nouvelle AFD</span>
+</div>
+
+<!-- Header -->
+<div class="flex items-center gap-4 mb-8">
+  <button (click)="goBack()"
+          class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+    ←
+  </button>
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Nouvelle AFD</h1>
+    <p class="text-sm text-gray-500 mt-1">Créez une nouvelle analyse fonctionnelle détaillée</p>
+  </div>
+</div>
+
+<!-- Layout 2 colonnes -->
+<div class="flex gap-6">
+
+  <!-- Colonne gauche -->
+  <div class="flex-1 space-y-6">
+
+    <!-- Informations générales -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-base font-semibold text-gray-900 mb-5">Informations générales</h2>
+
+      <!-- Bloc fonctionnel -->
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Bloc fonctionnel <span class="text-red-500">*</span>
+        </label>
+        <select [(ngModel)]="selectedBlockId"
+                class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option [ngValue]="null">Sélectionner un bloc...</option>
+          <option *ngFor="let b of blocks" [ngValue]="b.id">
+            {{ b.nom }} ({{ b.code }})
+          </option>
+        </select>
+      </div>
+
+      <!-- Exigences liées -->
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Exigences liées <span class="text-red-500">*</span>
+        </label>
+        <div class="border border-gray-300 rounded-lg max-h-48 overflow-y-auto p-2">
+          <div *ngFor="let e of exigences"
+               class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
+               (click)="toggleExigence('REQ-' + e.id)">
+            <input type="checkbox"
+                   [checked]="isExigenceSelected('REQ-' + e.id)"
+                   class="mt-0.5">
+            <div>
+              <p class="text-sm font-medium text-gray-700">REQ-{{ e.id }} — {{ e.intitule }}</p>
+              <p class="text-xs text-gray-500">{{ e.description }}</p>
+            </div>
+          </div>
+          <p *ngIf="exigences.length === 0"
+             class="text-sm text-gray-400 text-center py-4">
+            Aucune exigence disponible
+          </p>
+        </div>
+      </div>
+
+      <!-- Intitulé -->
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Intitulé <span class="text-red-500">*</span>
+        </label>
+        <input type="text" [(ngModel)]="afd.intitule"
+               placeholder="Ex: Authentification par SSO"
+               class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <!-- Objectif -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Objectif</label>
+        <textarea [(ngModel)]="afd.objectif" rows="3"
+                  placeholder="Décrivez l'objectif de cette AFD..."
+                  class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">
+        </textarea>
+      </div>
+
+      <!-- Complexité fonctionnelle -->
+      <div class="mt-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Complexité fonctionnelle
+        </label>
+        <select [(ngModel)]="afd.complexiteFonctionnelle"
+                class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">-- Sélectionner --</option>
+          <option value="Faible">Faible</option>
+          <option value="Moyenne">Moyenne</option>
+          <option value="Élevée">Élevée</option>
+        </select>
+      </div>
+
+    </div>
+
+    <!-- Description détaillée -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-base font-semibold text-gray-900 mb-5">Description détaillée</h2>
+
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+        <textarea [(ngModel)]="afd.description" rows="4"
+                  placeholder="Décrivez en détail cette fonctionnalité..."
+                  class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">
+        </textarea>
+      </div>
+
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Règles de gestion</label>
+        <textarea [(ngModel)]="afd.reglesGestion" rows="3"
+                  placeholder="Une règle par ligne..."
+                  class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">
+        </textarea>
+      </div>
+
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Flux nominal</label>
+        <textarea [(ngModel)]="afd.fluxNominal" rows="3"
+                  placeholder="Décrivez le flux nominal étape par étape..."
+                  class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">
+        </textarea>
+      </div>
+
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Cas alternatifs / erreurs</label>
+        <textarea [(ngModel)]="afd.casAlternatifs" rows="3"
+                  placeholder="Décrivez les cas alternatifs et les situations d'erreur..."
+                  class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">
+        </textarea>
+      </div>
+
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Données manipulées</label>
+        <textarea [(ngModel)]="afd.donneesManipulees" rows="3"
+                  placeholder="Liste des données manipulées..."
+                  class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">
+        </textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Critères d'acceptation (optionnel)
+        </label>
+        <textarea [(ngModel)]="afd.criteresAcceptation" rows="3"
+                  placeholder="Définissez les critères d'acceptation..."
+                  class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">
+        </textarea>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Colonne droite -->
+  <div class="w-80 space-y-4">
+
+    <!-- Assistant IA -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-blue-500">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+          </svg>
+        </span>
+        <h3 class="text-sm font-semibold text-gray-900">Assistant IA</h3>
+      </div>
+      <p class="text-xs text-blue-600 mb-4">
+        L'IA peut vous aider à améliorer la rédaction de votre AFD en proposant des compléments et des améliorations.
+      </p>
+
+      <label class="block text-xs font-medium text-gray-700 mb-2">Instruction pour l'IA</label>
+      <textarea [(ngModel)]="aiInstruction" rows="4"
+                placeholder="Ex: Propose des règles de gestion plus détaillées, enrichis le flux nominal..."
+                class="w-full border border-gray-300 rounded-lg p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none mb-3">
+      </textarea>
+
+      <button (click)="proposeAiImprovement()"
+              [disabled]="loadingAi"
+              class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+        <span *ngIf="!loadingAi">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+          </svg>
+          Proposer une amélioration
+        </span>
+        <span *ngIf="loadingAi">Génération en cours...</span>
+      </button>
+
+      <!-- Suggestion IA -->
+      <div *ngIf="aiSuggestion" class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <p class="text-xs text-blue-700 mb-3">{{ aiSuggestion }}</p>
+        <button (click)="applySuggestion()"
+                class="w-full px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">
+          Appliquer la suggestion
+        </button>
+      </div>
+
+      <p class="text-xs text-gray-400 mt-3">
+        L'IA analyse votre description et propose des améliorations. Vous choisissez d'appliquer ou non les suggestions.
+      </p>
+    </div>
+
+    <!-- Aide à la rédaction -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h3 class="text-sm font-semibold text-gray-900 mb-4">Aide à la rédaction</h3>
+      <div class="space-y-3 text-xs text-gray-600">
+        <div>
+          <p class="font-medium text-gray-700">Description :</p>
+          <p>Décrivez ce que fait la fonctionnalité</p>
+        </div>
+        <div>
+          <p class="font-medium text-gray-700">Règles de gestion :</p>
+          <p>Contraintes métier à respecter</p>
+        </div>
+        <div>
+          <p class="font-medium text-gray-700">Flux nominal :</p>
+          <p>Scénario standard étape par étape</p>
+        </div>
+        <div>
+          <p class="font-medium text-gray-700">Cas alternatifs :</p>
+          <p>Situations d'erreur ou d'exception</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+  <button (click)="goBack()"
+          class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+    Annuler
+  </button>
+  <button (click)="save()"
+          [disabled]="!afd.intitule.trim()"
+          class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+    </svg>
+    Créer l'AFD
+  </button>
+</div>

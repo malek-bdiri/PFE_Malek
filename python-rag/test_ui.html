@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test - Génération des Exigences</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; padding: 20px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { text-align: center; margin-bottom: 10px; color: #1a73e8; }
+  .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+
+  /* Health indicator */
+  .health-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding: 10px 16px; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .health-dot { width: 12px; height: 12px; border-radius: 50%; background: #ccc; }
+  .health-dot.ok { background: #34a853; }
+  .health-dot.ko { background: #ea4335; }
+  #health-text { font-size: 14px; }
+
+  /* Form card */
+  .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .card h2 { margin-bottom: 16px; font-size: 18px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px; }
+  input[type="text"], input[type="number"], select { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+  input:focus, select:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26,115,232,.2); }
+
+  /* File drop zone */
+  .drop-zone { grid-column: 1 / -1; border: 2px dashed #ccc; border-radius: 10px; padding: 30px; text-align: center; cursor: pointer; transition: .2s; }
+  .drop-zone:hover, .drop-zone.dragover { border-color: #1a73e8; background: #e8f0fe; }
+  .drop-zone p { color: #888; }
+  .drop-zone .file-name { color: #1a73e8; font-weight: 600; margin-top: 8px; }
+
+  /* Buttons */
+  .btn { padding: 10px 24px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: .2s; }
+  .btn-primary { background: #1a73e8; color: #fff; }
+  .btn-primary:hover { background: #1557b0; }
+  .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+  .actions { display: flex; gap: 12px; margin-top: 16px; }
+
+  /* Progress */
+  .progress { display: none; margin: 20px 0; }
+  .progress.active { display: block; }
+  .progress-bar { height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; }
+  .progress-bar-inner { height: 100%; width: 30%; background: #1a73e8; border-radius: 2px; animation: loading 1.5s infinite ease-in-out; }
+  @keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+  .progress-text { font-size: 13px; color: #666; margin-top: 6px; }
+
+  /* Results table */
+  .results { display: none; }
+  .results.active { display: block; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #1a73e8; color: #fff; padding: 10px 8px; text-align: left; position: sticky; top: 0; }
+  td { padding: 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+  tr:hover td { background: #f8f9fa; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-func { background: #e8f0fe; color: #1a73e8; }
+  .badge-nonf { background: #fef3e0; color: #e65100; }
+  .badge-secu { background: #fce4ec; color: #c62828; }
+  .badge-perf { background: #e8f5e9; color: #2e7d32; }
+
+  /* Raw text fallback */
+  .raw-text { display: none; margin-top: 16px; }
+  .raw-text.active { display: block; }
+  .raw-text pre { background: #f5f5f5; padding: 16px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; font-size: 13px; max-height: 500px; overflow-y: auto; }
+
+  /* Error */
+  .error-box { display: none; background: #fce4ec; border: 1px solid #ef9a9a; border-radius: 8px; padding: 16px; margin-top: 16px; color: #c62828; }
+  .error-box.active { display: block; }
+
+  /* Stats */
+  .stats { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stat-card { background: #f8f9fa; border-radius: 8px; padding: 12px 20px; text-align: center; min-width: 120px; }
+  .stat-card .value { font-size: 24px; font-weight: 700; color: #1a73e8; }
+  .stat-card .label { font-size: 12px; color: #666; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Génération des Exigences</h1>
+  <p class="subtitle">Uploadez un Cahier des Charges (PDF) et générez automatiquement les exigences</p>
+
+  <!-- Health -->
+  <div class="health-bar">
+    <div class="health-dot" id="health-dot"></div>
+    <span id="health-text">Vérification du serveur...</span>
+    <button class="btn" style="margin-left:auto; padding:4px 12px; font-size:12px;" onclick="checkHealth()">Refresh</button>
+  </div>
+
+  <!-- Form -->
+  <div class="card">
+    <h2>Paramètres du projet</h2>
+    <div class="form-grid">
+      <div>
+        <label>Nom du projet</label>
+        <input type="text" id="project_name" value="CEVITAL Manufacturing System">
+      </div>
+      <div>
+        <label>ID Projet</label>
+        <input type="text" id="project_id" value="PRJ-001">
+      </div>
+      <div>
+        <label>Client</label>
+        <input type="text" id="client_name" value="CEVITAL">
+      </div>
+      <div>
+        <label>Produit</label>
+        <input type="text" id="product_name" value="Smart Factory" readonly>
+      </div>
+      <!-- File upload -->
+      <div class="drop-zone" id="drop-zone">
+        <p>📄 Glissez un fichier PDF ici ou <strong>cliquez pour parcourir</strong></p>
+        <div class="file-name" id="file-name"></div>
+        <input type="file" id="file-input" accept=".pdf,.docx,.txt" style="display:none">
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-generate" onclick="generate()" disabled>Générer les exigences</button>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress" id="progress">
+    <div class="card">
+      <div class="progress-bar"><div class="progress-bar-inner"></div></div>
+      <p class="progress-text" id="progress-text">Envoi du fichier et génération en cours... (30-60s)</p>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="error-box"></div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+    <div class="card">
+      <h2>Exigences générées</h2>
+      <div class="stats" id="stats"></div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Type</th>
+              <th>Intitulé</th>
+              <th>Objectif client</th>
+              <th>Description</th>
+              <th>Solution proposée</th>
+              <th>Limites et hypothèses</th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Raw text fallback -->
+  <div class="raw-text" id="raw-text">
+    <div class="card">
+      <h2>Réponse brute du LLM (parsed_json=null)</h2>
+      <pre id="raw-text-content"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+let selectedFile = null;
+
+// --- Health check ---
+async function checkHealth() {
+  const dot = document.getElementById('health-dot');
+  const txt = document.getElementById('health-text');
+  try {
+    const r = await fetch(API + '/health');
+    if (r.ok) {
+      const d = await r.json();
+      dot.className = 'health-dot ok';
+      txt.textContent = 'Serveur OK — ' + (d.pipelines_ready || 'prêt');
+    } else {
+      dot.className = 'health-dot ko';
+      txt.textContent = 'Serveur erreur ' + r.status;
+    }
+  } catch (e) {
+    dot.className = 'health-dot ko';
+    txt.textContent = 'Serveur injoignable — lancez uvicorn sur le port 8000';
+  }
+}
+checkHealth();
+
+// --- File drop zone ---
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const fileNameDiv = document.getElementById('file-name');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) setFile(fileInput.files[0]); });
+
+function setFile(f) {
+  selectedFile = f;
+  fileNameDiv.textContent = f.name + ' (' + (f.size / 1024).toFixed(1) + ' KB)';
+  document.getElementById('btn-generate').disabled = false;
+}
+
+// --- Generate ---
+async function generate() {
+  if (!selectedFile) return;
+
+  // UI state
+  document.getElementById('btn-generate').disabled = true;
+  document.getElementById('progress').classList.add('active');
+  document.getElementById('results').classList.remove('active');
+  document.getElementById('raw-text').classList.remove('active');
+  document.getElementById('error-box').classList.remove('active');
+
+  const fd = new FormData();
+  fd.append('file', selectedFile);
+  fd.append('project_name', document.getElementById('project_name').value);
+  fd.append('project_id', document.getElementById('project_id').value);
+  fd.append('client_name', document.getElementById('client_name').value);
+  fd.append('product_name', document.getElementById('product_name').value);
+  fd.append('language', 'fr');
+  fd.append('top_k', '8');
+
+  const t0 = Date.now();
+  document.getElementById('progress-text').textContent = 'Envoi du fichier et génération en cours... (30-60s)';
+
+  try {
+    const r = await fetch(API + '/project/generate', { method: 'POST', body: fd });
+    const data = await r.json();
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+    document.getElementById('progress').classList.remove('active');
+    document.getElementById('btn-generate').disabled = false;
+
+    if (!r.ok) {
+      showError('Erreur HTTP ' + r.status + ': ' + (data.detail || JSON.stringify(data)));
+      return;
+    }
+
+    if (data.success && data.exigences && data.exigences.length > 0) {
+      showResults(data.exigences, elapsed, data);
+    } else if (data.raw_text) {
+      // parsed_json was null — show raw text
+      document.getElementById('raw-text').classList.add('active');
+      document.getElementById('raw-text-content').textContent = data.raw_text;
+      showError('Le LLM a répondu (' + elapsed + 's) mais le JSON n\'a pas pu être parsé. Voir la réponse brute ci-dessous.');
+    } else if (data.error) {
+      showError('Erreur LLM: ' + data.error);
+    } else {
+      showError('Réponse inattendue: ' + JSON.stringify(data).substring(0, 500));
+    }
+  } catch (e) {
+    document.getElementById('progress').classList.remove('active');
+    document.getElementById('btn-generate').disabled = false;
+    showError('Erreur réseau: ' + e.message);
+  }
+}
+
+function showError(msg) {
+  const box = document.getElementById('error-box');
+  box.textContent = msg;
+  box.classList.add('active');
+}
+
+function showResults(exigences, elapsed, data) {
+  // Stats
+  const statsDiv = document.getElementById('stats');
+  const types = {};
+  exigences.forEach(e => { const t = e.type || 'Autre'; types[t] = (types[t] || 0) + 1; });
+  statsDiv.innerHTML =
+    '<div class="stat-card"><div class="value">' + exigences.length + '</div><div class="label">Exigences</div></div>' +
+    '<div class="stat-card"><div class="value">' + elapsed + 's</div><div class="label">Durée</div></div>' +
+    Object.entries(types).map(([t, c]) => '<div class="stat-card"><div class="value">' + c + '</div><div class="label">' + t + '</div></div>').join('');
+
+  // Table
+  const tbody = document.getElementById('results-body');
+  tbody.innerHTML = '';
+  exigences.forEach((ex, i) => {
+    const tr = document.createElement('tr');
+    const badgeClass = (ex.type || '').toLowerCase().includes('non') ? 'badge-nonf'
+      : (ex.type || '').toLowerCase().includes('sécu') || (ex.type || '').toLowerCase().includes('secu') ? 'badge-secu'
+      : (ex.type || '').toLowerCase().includes('perf') ? 'badge-perf'
+      : 'badge-func';
+    tr.innerHTML =
+      '<td>' + (i + 1) + '</td>' +
+      '<td><span class="badge ' + badgeClass + '">' + (ex.type || '-') + '</span></td>' +
+      '<td>' + (ex.intitule || ex.intitulé || '-') + '</td>' +
+      '<td>' + (ex.objectif_client || '-') + '</td>' +
+      '<td>' + (ex.description || '-') + '</td>' +
+      '<td>' + (ex.solution_proposee || ex.solution_proposée || '-') + '</td>' +
+      '<td>' + (ex.limites_et_hypotheses || ex.limites_et_hypothèses || '-') + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('results').classList.add('active');
+}
+</script>
+</body>
+</html>

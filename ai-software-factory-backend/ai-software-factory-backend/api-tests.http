@@ -1,0 +1,130 @@
+### ======================
+### Authentification Keycloak - Exemples de requêtes
+### ======================
+
+### Variables
+@baseUrl = http://localhost:8081
+@keycloakUrl = http://localhost:8080
+@realm = momsoft
+
+### ======================
+### 1. LOGIN - Admin
+### ======================
+# @name loginAdmin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "malekbdiri06@gmail.com",
+  "password": "admin"
+}
+
+### Sauvegarder le token
+@accessToken = {{loginAdmin.response.body.accessToken}}
+@refreshToken = {{loginAdmin.response.body.refreshToken}}
+
+### ======================
+### 2. LOGIN - Admin2 (Chef de Projet)
+### ======================
+# @name loginAdmin2
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "malek.bdiri@esprit.tn",
+  "password": "admin"
+}
+
+### ======================
+### 3. LOGIN - Malek (Editeur/Lecteur)
+### ======================
+# @name loginMalek
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "malekbdiri05@gmail.com",
+  "password": "malek"
+}
+
+### ======================
+### 4. REFRESH TOKEN
+### ======================
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### ======================
+### 5. TEST ENDPOINT - Public (sans authentification)
+### ======================
+GET {{baseUrl}}/api/test/public
+
+### ======================
+### 6. TEST ENDPOINT - Authenticated
+### ======================
+GET {{baseUrl}}/api/test/authenticated
+Authorization: Bearer {{accessToken}}
+
+### ======================
+### 7. TEST ENDPOINT - Admin Only
+### ======================
+GET {{baseUrl}}/api/test/admin
+Authorization: Bearer {{accessToken}}
+
+### ======================
+### 8. TEST ENDPOINT - Chef de Projet Only
+### ======================
+GET {{baseUrl}}/api/test/chef
+Authorization: Bearer {{accessToken}}
+
+### ======================
+### 9. TEST ENDPOINT - Editeur or Admin
+### ======================
+GET {{baseUrl}}/api/test/editeur
+Authorization: Bearer {{accessToken}}
+
+### ======================
+### 10. TEST ENDPOINT - Lecteur or Admin
+### ======================
+GET {{baseUrl}}/api/test/lecteur
+Authorization: Bearer {{accessToken}}
+
+### ======================
+### KEYCLOAK - Obtenir un token directement (alternative)
+### ======================
+# @name keycloakDirectLogin
+POST {{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password
+&client_id=momsoft-rest-api
+&username=malekbdiri06@gmail.com
+&password=admin
+
+### ======================
+### KEYCLOAK - Refresh Token directement
+### ======================
+POST {{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token
+&client_id=momsoft-rest-api
+&refresh_token={{refreshToken}}
+
+### ======================
+### KEYCLOAK - Logout (révocation du token)
+### ======================
+POST {{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/logout
+Content-Type: application/x-www-form-urlencoded
+
+client_id=momsoft-rest-api
+&refresh_token={{refreshToken}}
+
+### ======================
+### Test Auth Controller
+### ======================
+GET {{baseUrl}}/api/auth/test
+

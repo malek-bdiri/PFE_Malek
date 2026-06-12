@@ -1,0 +1,67 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "projets": "Project Needs",
+    "analyse": "Functional Analysis",
+    "tests": "Tests",
+    "parametres": "Settings",
+    "planning": "Planning",
+    "uiux": "UI / UX",
+    "architecture": "Architecture",
+    "automation": "Automation"
+  },
+  "projet": {
+    "nouveau": "New project",
+    "nom": "Project name",
+    "code": "Project code",
+    "client": "Client",
+    "produit": "Product",
+    "description": "Description",
+    "mode_ia": "AI Generation",
+    "mode_manuel": "Manual mode",
+    "creer": "Create project",
+    "annuler": "Cancel",
+    "generer_ia": "Generate with AI",
+    "succes": "Project created successfully!",
+    "erreur_champs": "Please fill in the required fields",
+    "erreur_client": "Please select a client",
+    "erreur_exigence": "Please add at least one requirement"
+  },
+  "exigence": {
+    "titre": "Requirements",
+    "ajouter": "Add requirement",
+    "type": "Type",
+    "intitule": "Title",
+    "objectif": "Client objective",
+    "description": "Description",
+    "solution": "Proposed solution",
+    "limites": "Limits / Assumptions",
+    "valider": "Validate",
+    "rejeter": "Reject"
+  },
+  "validation": {
+    "demander": "Request validation",
+    "en_attente": "Pending",
+    "valide": "Validated",
+    "revision": "Needs revision",
+    "choisir_validateur": "Choose a validator",
+    "confirmer": "Confirm request"
+  },
+  "statut": {
+    "en_cours": "In progress",
+    "valide": "Validated",
+    "en_attente": "Pending",
+    "a_revoir": "To review"
+  },
+  "commun": {
+    "rechercher": "Search...",
+    "supprimer": "Delete",
+    "modifier": "Edit",
+    "enregistrer": "Save",
+    "fermer": "Close",
+    "aucun": "No results",
+    "oui": "Yes",
+    "non": "No",
+    "deconnexion": "Logout"
+  }
+}

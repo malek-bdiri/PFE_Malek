@@ -1,0 +1,271 @@
+<!-- Backdrop -->
+<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" (click)="cancel()">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+       (click)="$event.stopPropagation()">
+
+    <!-- ═══ STEP: FORM ═══════════════════════════════════════════════════ -->
+    <ng-container *ngIf="step === 'form'">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <div>
+          <h2 class="text-lg font-bold text-gray-900">Nouveau scénario de test</h2>
+          <p class="text-sm text-gray-500">Créer un scénario de test manuellement</p>
+        </div>
+        <button (click)="cancel()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="px-6 py-5 space-y-5">
+
+        <!-- Info banner -->
+        <div class="bg-blue-50 rounded-lg p-3 flex items-start gap-2">
+          <svg class="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p class="text-xs text-blue-700">
+            Sélectionnez un projet et une AFD pour <strong>générer automatiquement</strong> des cas de test par IA.
+            Ou créez un scénario manuellement sans AFD.
+          </p>
+        </div>
+
+        <!-- Titre -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Titre du scénario <span class="text-red-500">*</span>
+          </label>
+          <input type="text" [(ngModel)]="titre"
+                 placeholder="Ex: Authentification utilisateur"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Projet -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Sélectionner un projet <span class="text-red-500">*</span>
+          </label>
+          <select [(ngModel)]="selectedProjetId" (ngModelChange)="onProjetChange()"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option [ngValue]="null">Sélectionner un projet</option>
+            <option *ngFor="let p of projets" [ngValue]="p.id">
+              {{ p.codeProjet }} — {{ p.nom }}
+            </option>
+          </select>
+        </div>
+
+        <!-- AFD -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Sélectionner une AFD
+            <span class="text-gray-400 font-normal">(requis pour génération IA)</span>
+          </label>
+
+          <div *ngIf="loadingAfds" class="flex items-center gap-2 text-sm text-gray-400 py-2">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+            Chargement des AFDs...
+          </div>
+
+          <select *ngIf="!loadingAfds"
+                  [(ngModel)]="selectedAfdId"
+                  [disabled]="!selectedProjetId"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400">
+            <option [ngValue]="null">Sélectionner un AFD</option>
+            <option *ngFor="let afd of afds" [ngValue]="afd.id">
+              {{ afd.intitule }}
+              <ng-container *ngIf="afd.analysisCode"> ({{ afd.analysisCode }})</ng-container>
+            </option>
+          </select>
+
+          <p *ngIf="selectedProjetId && !loadingAfds && afds.length === 0"
+             class="text-xs text-orange-500 mt-1">
+            Aucune AFD trouvée pour ce projet. Créez d'abord une AFD dans la section Analyse fonctionnelle.
+          </p>
+
+          <!-- AFD preview -->
+          <div *ngIf="selectedAfd" class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs text-gray-600 space-y-1">
+            <p><strong>Objectif :</strong> {{ selectedAfd.objectif || '—' }}</p>
+            <p><strong>Règles de gestion :</strong> {{ selectedAfd.reglesGestion || '—' }}</p>
+            <p><strong>Données manipulées :</strong> {{ selectedAfd.donneesManipulees || '—' }}</p>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea [(ngModel)]="description" rows="3"
+                    placeholder="Décrivez l'objectif et le scope de ce scénario de test..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+        </div>
+
+        <!-- Type + Priorité -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <select [(ngModel)]="type"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option *ngFor="let t of types" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Priorité</label>
+            <select [(ngModel)]="priorite"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option *ngFor="let p of priorites" [value]="p.value">{{ p.label }}</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-between px-6 py-4 border-t bg-gray-50 rounded-b-2xl gap-3">
+        <button (click)="cancel()"
+                class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+          Annuler
+        </button>
+        <div class="flex gap-2">
+          <!-- Créer manuellement -->
+          <button (click)="createManuel()"
+                  [disabled]="!canCreateManuel"
+                  class="px-4 py-2 text-sm border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            Créer manuellement
+          </button>
+          <!-- Générer par IA -->
+          <button (click)="generateFromAFD()"
+                  [disabled]="!canGenerate"
+                  class="flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            Générer par IA
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ═══ STEP: GENERATING ═════════════════════════════════════════════ -->
+    <ng-container *ngIf="step === 'generating'">
+      <div class="px-6 py-16 flex flex-col items-center gap-5">
+        <div class="relative">
+          <div class="w-16 h-16 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin"></div>
+          <svg class="absolute inset-0 m-auto w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+        </div>
+        <div class="text-center">
+          <h3 class="text-lg font-semibold text-gray-900">Génération en cours...</h3>
+          <p class="text-sm text-gray-500 mt-1">Le modèle IA analyse l'AFD et génère les scénarios de test</p>
+        </div>
+        <div class="flex gap-1 mt-2">
+          <div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+          <div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+          <div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ═══ STEP: RESULT ══════════════════════════════════════════════════ -->
+    <ng-container *ngIf="step === 'result'">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <div>
+          <h2 class="text-lg font-bold text-gray-900">
+            <ng-container *ngIf="!errorMessage">
+              {{ generatedScenarios.length }} scénario{{ generatedScenarios.length > 1 ? 's' : '' }} généré{{ generatedScenarios.length > 1 ? 's' : '' }}
+            </ng-container>
+            <ng-container *ngIf="errorMessage">Erreur de génération</ng-container>
+          </h2>
+          <p class="text-sm text-gray-500">{{ titre }}</p>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="errorMessage" class="px-6 py-4">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div class="flex items-start gap-2">
+            <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-sm text-red-700">{{ errorMessage }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scenarios list -->
+      <div *ngIf="!errorMessage && generatedScenarios.length > 0" class="px-6 py-4 space-y-4 max-h-96 overflow-y-auto">
+        <div *ngFor="let scenario of generatedScenarios"
+             class="border border-gray-200 rounded-xl overflow-hidden">
+
+          <!-- Scenario header -->
+          <div class="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono text-gray-500">{{ scenario.scenarioId }}</span>
+              <span class="text-sm font-semibold text-gray-900">{{ scenario.titre }}</span>
+            </div>
+            <div class="flex gap-1.5">
+              <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">{{ scenario.type }}</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">{{ scenario.priorite }}</span>
+            </div>
+          </div>
+
+          <!-- Test cases -->
+          <div class="divide-y">
+            <div *ngFor="let cas of scenario.casDeTest" class="px-4 py-3">
+              <div class="flex items-start gap-2">
+                <span class="text-xs font-mono text-blue-600 shrink-0 mt-0.5">{{ cas.caseId }}</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-800">{{ cas.groupe }}</p>
+                  <p class="text-xs text-gray-500 mt-0.5">
+                    <strong>Résultat attendu :</strong> {{ cas.resultatAttendu }}
+                  </p>
+                  <div *ngIf="cas.etapes && cas.etapes.length > 0" class="mt-1">
+                    <p class="text-xs text-gray-400">{{ cas.etapes.length }} étapes</p>
+                  </div>
+                </div>
+                <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 shrink-0">{{ cas.statut }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Critères -->
+          <div *ngIf="scenario.criteresAcceptation && scenario.criteresAcceptation.length > 0"
+               class="px-4 py-3 bg-green-50 border-t">
+            <p class="text-xs font-medium text-green-700 mb-1">Critères d'acceptation</p>
+            <ul class="space-y-0.5">
+              <li *ngFor="let c of scenario.criteresAcceptation"
+                  class="text-xs text-green-700 flex items-start gap-1.5">
+                <svg class="w-3 h-3 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                {{ c }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-between px-6 py-4 border-t bg-gray-50 rounded-b-2xl">
+        <button (click)="retryForm()"
+                class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+          ← Retour
+        </button>
+        <button (click)="done()"
+                class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <ng-container *ngIf="!errorMessage">Terminer</ng-container>
+          <ng-container *ngIf="errorMessage">Fermer</ng-container>
+        </button>
+      </div>
+    </ng-container>
+
+  </div>
+</div>

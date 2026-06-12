@@ -1,0 +1,722 @@
+<div class="min-h-screen bg-gray-50">
+  <main class="p-6">
+      <div class="mb-4">
+        <nav class="flex text-sm text-gray-500">
+          <a routerLink="/admin/dashboard" class="hover:text-gray-700">Tableau de bord</a>
+          <span class="mx-2">&gt;</span>
+          <span class="text-gray-900">Besoins projet</span>
+        </nav>
+      </div>
+
+      <!-- En-tête de la page -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Besoins projet</h1>
+          <p class="text-sm text-gray-600 mt-1">{{ projets.length }} projet(s) trouvé(s)</p>
+        </div>
+        <button *ngIf="canEditProjet" (click)="toggleNewProjectForm()" class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Nouveau projet
+        </button>
+      </div>
+
+      <!-- Formulaire Nouveau Projet -->
+      <div *ngIf="showNewProjectForm" class="bg-white rounded-xl shadow-lg border border-gray-200 p-8 mb-6 animate-fade-in">
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-gray-900">Nouveau Projet</h2>
+          <p class="text-gray-600 mt-2">Créer un nouveau projet et importer les documents</p>
+        </div>
+        
+        <form class="space-y-8">
+          <!-- Mode de création -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Mode de création</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button 
+                type="button"
+                (click)="setCreationMode('ia')"
+                [class.border-blue-600]="creationMode === 'ia'"
+                [class.bg-blue-50]="creationMode === 'ia'"
+                [class.border-gray-300]="creationMode !== 'ia'"
+                class="border-2 rounded-lg p-6 text-left hover:border-blue-400 transition-colors"
+              >
+                <div class="flex items-start">
+                  <div class="flex-shrink-0">
+                    <div [class.bg-blue-600]="creationMode === 'ia'" [class.bg-gray-400]="creationMode !== 'ia'" class="w-6 h-6 rounded-full flex items-center justify-center">
+                      <svg *ngIf="creationMode === 'ia'" class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-2">IA (Automatique)</h4>
+                    <p class="text-sm text-gray-600">L'IA générera automatiquement les exigences à partir de vos documents</p>
+                  </div>
+                </div>
+              </button>
+
+              <button 
+                type="button"
+                (click)="setCreationMode('manuel')"
+                [class.border-blue-600]="creationMode === 'manuel'"
+                [class.bg-blue-50]="creationMode === 'manuel'"
+                [class.border-gray-300]="creationMode !== 'manuel'"
+                class="border-2 rounded-lg p-6 text-left hover:border-blue-400 transition-colors"
+              >
+                <div class="flex items-start">
+                  <div class="flex-shrink-0">
+                    <div [class.bg-blue-600]="creationMode === 'manuel'" [class.bg-gray-400]="creationMode !== 'manuel'" class="w-6 h-6 rounded-full flex items-center justify-center">
+                      <svg *ngIf="creationMode === 'manuel'" class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-2">Manuel</h4>
+                    <p class="text-sm text-gray-600">Saisir manuellement les informations du projet et les exigences</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Mode IA -->
+          <div *ngIf="creationMode === 'ia'">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Informations du projet</h3>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Nom du projet *</label>
+                  <input type="text" [(ngModel)]="newProjet.nom" [ngModelOptions]="{standalone: true}" placeholder="Ex: Module CRM" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">ID Projet *</label>
+                  <input type="text" [(ngModel)]="newProjet.codeProjet" [ngModelOptions]="{standalone: true}" placeholder="Ex: PRJ-2024-001" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Client *</label>
+                  <select [(ngModel)]="newProjet.clientId" [ngModelOptions]="{standalone: true}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option [ngValue]="null">Sélectionner un client</option>
+                    <option *ngFor="let client of clients" [ngValue]="client.id">{{ client.nom }}</option>
+                  </select>
+                  <p class="text-xs text-gray-500 mt-1">Les clients sont ceux ajoutés dans Paramètres › Clients</p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Produit</label>
+                  <select [(ngModel)]="newProjet.produitId" [ngModelOptions]="{standalone: true}" (ngModelChange)="onProduitSelectChange($event)" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option [ngValue]="null">Sélectionner un produit</option>
+                    <option *ngFor="let produit of produits" [ngValue]="produit.id">{{ produit.nom }}</option>
+                    <option [ngValue]="-1">+ Nouveau produit</option>
+                  </select>
+                  <div *ngIf="showNewProduitInput" class="mt-2 flex gap-2">
+                    <input type="text" [(ngModel)]="newProduitNom" [ngModelOptions]="{standalone: true}" placeholder="Nom du nouveau produit" class="flex-1 px-3 py-2 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                    <button type="button" (click)="saveNewProduit()" [disabled]="!newProduitNom.trim() || isSavingProduit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                      {{ isSavingProduit ? 'Enregistrement...' : 'Enregistrer' }}
+                    </button>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Les produits sont ceux ajoutés dans Paramètres › Produits</p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <textarea rows="4" [(ngModel)]="newProjet.description" [ngModelOptions]="{standalone: true}" placeholder="Description du projet..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Import des documents -->
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Import des documents</h3>
+              <div class="space-y-6">
+                <!-- Cahier des Charges -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-3">Cahier des Charges (CdC)</label>
+                  <div class="border-2 border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-sm text-gray-600 mb-1">PDF, DOCX, TXT - Max 10MB</p>
+                        <p class="text-xs text-gray-500" *ngIf="cdcFileName">Fichier: {{ cdcFileName }}</p>
+                      </div>
+                      <label for="cdc-upload" class="cursor-pointer">
+                        <div class="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                          Choisir un fichier
+                        </div>
+                        <input id="cdc-upload" type="file" class="hidden" (change)="onCDCSelected($event)" accept=".pdf,.doc,.docx,.txt">
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Compte-Rendu -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-3">Compte-Rendu (CR)</label>
+                  <div class="border-2 border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-sm text-gray-600 mb-1">PDF, DOCX, TXT - Max 10MB</p>
+                        <p class="text-xs text-gray-500" *ngIf="crFileName">Fichier: {{ crFileName }}</p>
+                      </div>
+                      <label for="cr-upload" class="cursor-pointer">
+                        <div class="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                          Choisir un fichier
+                        </div>
+                        <input id="cr-upload" type="file" class="hidden" (change)="onCRSelected($event)" accept=".pdf,.doc,.docx,.txt">
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Autres Documents -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-3">Autres Documents</label>
+                  <div class="border-2 border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                    <div class="flex items-center justify-between mb-3">
+                      <div>
+                        <p class="text-sm text-gray-600 mb-1">PDF, DOCX, TXT, XLS, XLSX - Max 10MB par fichier</p>
+                        <p class="text-xs text-gray-500">Vous pouvez sélectionner plusieurs fichiers</p>
+                      </div>
+                      <label for="autres-docs-upload" class="cursor-pointer">
+                        <div class="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                          Choisir des fichiers
+                        </div>
+                        <input id="autres-docs-upload" type="file" multiple class="hidden" (change)="onAutresDocumentsSelected($event)" accept=".pdf,.doc,.docx,.txt,.xls,.xlsx">
+                      </label>
+                    </div>
+                    <div *ngIf="autresDocumentsFileNames.length > 0" class="space-y-2">
+                      <div *ngFor="let fileName of autresDocumentsFileNames; let i = index" class="flex items-center justify-between bg-gray-50 px-3 py-2 rounded">
+                        <span class="text-sm text-gray-700">{{ fileName }}</span>
+                        <button type="button" (click)="removeAutreDocument(i)" class="text-red-600 hover:text-red-800">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-lg border border-blue-100 bg-blue-50 p-4">
+              <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <h4 class="text-sm font-semibold text-blue-900">Generation IA des exigences</h4>
+                  <p class="text-xs text-blue-800 mt-1">Cliquez pour generer automatiquement les exigences a partir du contexte projet et des documents importes.</p>
+                </div>
+                <button
+                  type="button"
+                  (click)="generateExigencesFromIA()"
+                  [disabled]="isGeneratingIA"
+                  class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {{ isGeneratingIA ? 'Generation en cours...' : 'Generer avec IA' }}
+                </button>
+              </div>
+
+              <!-- Erreur génération -->
+              <div *ngIf="iaGenerationError" class="mt-3 bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  <p class="text-sm text-red-700">{{ iaGenerationError }}</p>
+                </div>
+              </div>
+
+              <!-- Succès + cartes exigences -->
+              <div *ngIf="exigences.length > 0" class="mt-5">
+
+                <!-- Bannière succès -->
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-5">
+                  <div class="flex items-center gap-3">
+                    <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div>
+                      <p class="text-sm font-semibold text-green-800">Génération terminée</p>
+                      <p class="text-xs text-green-700">{{ exigences.length }} exigence(s) ont été générées. Vous pouvez les modifier avant de les enregistrer.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Titre section -->
+                <div class="flex items-center justify-between mb-3">
+                  <h5 class="text-sm font-semibold text-gray-800">Exigences générées</h5>
+                  <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{{ exigences.length }} au total</span>
+                </div>
+
+                <!-- Liste cartes -->
+                <div class="space-y-3">
+                  <div
+                    *ngFor="let exigence of exigences; let i = index"
+                    class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <!-- En-tête carte : badges + bouton retirer -->
+                    <div class="flex items-start justify-between mb-2">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <!-- Badge REQ-00X -->
+                        <span class="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+                          REQ-{{ (i + 1).toString().padStart(3, '0') }}
+                        </span>
+                        <!-- Badge type -->
+                        <span
+                          class="text-xs font-medium px-2 py-0.5 rounded-md"
+                          [ngClass]="{
+                            'bg-purple-50 text-purple-700 border border-purple-200': exigence.type === 'Fonctionnel' || exigence.type === 'Fonctionnelle',
+                            'bg-orange-50 text-orange-700 border border-orange-200': exigence.type === 'Non-fonctionnel' || exigence.type === 'Non-fonctionnelle',
+                            'bg-red-50 text-red-700 border border-red-200': exigence.type === 'Sécurité' || exigence.type === 'Securite',
+                            'bg-gray-50 text-gray-700 border border-gray-200': exigence.type !== 'Fonctionnel' && exigence.type !== 'Fonctionnelle' && exigence.type !== 'Non-fonctionnel' && exigence.type !== 'Non-fonctionnelle' && exigence.type !== 'Sécurité' && exigence.type !== 'Securite'
+                          }"
+                        >{{ exigence.type }}</span>
+                        <!-- Badge priorité -->
+                        <span
+                          *ngIf="exigence.priorite"
+                          class="text-xs font-medium px-2 py-0.5 rounded-md"
+                          [ngClass]="{
+                            'bg-red-50 text-red-700 border border-red-200': exigence.priorite === 'Haute' || exigence.priorite === 'Élevée' || exigence.priorite === 'High',
+                            'bg-yellow-50 text-yellow-700 border border-yellow-200': exigence.priorite === 'Moyenne' || exigence.priorite === 'Medium',
+                            'bg-green-50 text-green-700 border border-green-200': exigence.priorite === 'Basse' || exigence.priorite === 'Low'
+                          }"
+                        >{{ exigence.priorite }}</span>
+                      </div>
+                      <button type="button" (click)="removeExigence(i)" class="text-gray-400 hover:text-red-600 transition-colors flex-shrink-0 ml-2" title="Retirer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                    <!-- Titre exigence -->
+                    <p class="text-sm font-semibold text-gray-900 mb-1">{{ exigence.intitule }}</p>
+                    <!-- Description -->
+                    <p class="text-sm text-gray-600 leading-relaxed">{{ exigence.description }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mode Manuel -->
+          <div *ngIf="creationMode === 'manuel'" class="space-y-8">
+            <!-- 1. Informations projet -->
+            <div>
+              <div class="flex items-center mb-4">
+                <div class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full font-bold text-sm mr-3">1</div>
+                <h3 class="text-lg font-semibold text-gray-900">Informations projet</h3>
+              </div>
+              <div class="pl-11 space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Nom du projet *</label>
+                  <input type="text" [(ngModel)]="newProjet.nom" [ngModelOptions]="{standalone: true}" placeholder="Ex: Module CRM - Gestion Clients" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Identifiant projet *</label>
+                  <input type="text" [(ngModel)]="newProjet.codeProjet" [ngModelOptions]="{standalone: true}" placeholder="Ex: PRJ-2024-001" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Client *</label>
+                  <select [(ngModel)]="newProjet.clientId" [ngModelOptions]="{standalone: true}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option [ngValue]="null">Sélectionner un client</option>
+                    <option *ngFor="let client of clients" [ngValue]="client.id">{{ client.nom }}</option>
+                  </select>
+                  <p class="text-xs text-gray-500 mt-1">Les clients sont ceux ajoutés dans Paramètres › Clients</p>
+                </div>
+
+                
+              </div>
+            </div>
+
+            <!-- 2. Contexte produit -->
+            <div>
+              <div class="flex items-center mb-4">
+                <div class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full font-bold text-sm mr-3">2</div>
+                <h3 class="text-lg font-semibold text-gray-900">Contexte produit</h3>
+              </div>
+              <div class="pl-11">
+                <p class="text-sm text-gray-600 mb-4">Le produit sélectionné permet de contextualiser le projet.</p>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Produit de l'entreprise</label>
+                <select [(ngModel)]="newProjet.produitId" [ngModelOptions]="{standalone: true}" (ngModelChange)="onProduitSelectChange($event)" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option [ngValue]="null">Sélectionner un produit</option>
+                  <option *ngFor="let produit of produits" [ngValue]="produit.id">{{ produit.nom }}</option>
+                  <option [ngValue]="-1">+ Nouveau produit</option>
+                </select>
+                <div *ngIf="showNewProduitInput" class="mt-2 flex gap-2">
+                  <input type="text" [(ngModel)]="newProduitNom" [ngModelOptions]="{standalone: true}" placeholder="Nom du nouveau produit" class="flex-1 px-3 py-2 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                  <button type="button" (click)="saveNewProduit()" [disabled]="!newProduitNom.trim() || isSavingProduit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {{ isSavingProduit ? 'Enregistrement...' : 'Enregistrer' }}
+                  </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Les produits sont ceux ajoutés dans Paramètres › Produits</p>
+              </div>
+            </div>
+
+            <!-- 3. Exigences -->
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                  <div class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full font-bold text-sm mr-3">3</div>
+                  <h3 class="text-lg font-semibold text-gray-900">Exigences ({{ exigences.length }})</h3>
+                </div>
+                <button type="button" (click)="toggleExigenceForm()" class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Ajouter une exigence
+                </button>
+              </div>
+
+              <!-- Formulaire d'ajout d'exigence -->
+              <div *ngIf="showExigenceForm" class="pl-11 mb-6 bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <h4 class="font-semibold text-gray-900 mb-4">Ajouter une exigence manuelle</h4>
+                <div class="space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Type *</label>
+                      <select [(ngModel)]="newExigence.type" [ngModelOptions]="{standalone: true}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option>Fonctionnel</option>
+                        <option>Non fonctionnel</option>
+                        <option>Sécurité</option>
+                        <option>Performance</option>
+                      </select>
+                    </div>
+    
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Intitulé de l'exigence *</label>
+                    <input type="text" [(ngModel)]="newExigence.intitule" [ngModelOptions]="{standalone: true}" placeholder="Ex: Authentification utilisateur" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Objectif client *</label>
+                    <input type="text" [(ngModel)]="newExigence.objectifClient" [ngModelOptions]="{standalone: true}" placeholder="Ex: Permettre l'accès sécurisé à l'application" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                    <textarea rows="3" [(ngModel)]="newExigence.description" [ngModelOptions]="{standalone: true}" placeholder="Ex: Le système doit permettre aux utilisateurs de se connecter..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Solution proposée</label>
+                    <textarea rows="3" [(ngModel)]="newExigence.solutionProposee" [ngModelOptions]="{standalone: true}" placeholder="Ex: Mise en place d'un système d'authentification basé sur JWT..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Limites et hypothèses</label>
+                    <textarea rows="3" [(ngModel)]="newExigence.limitesHypotheses" [ngModelOptions]="{standalone: true}" placeholder="Ex: L'authentification à deux facteurs n'est pas incluse..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                  </div>
+
+                  <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                    <button type="button" (click)="toggleExigenceForm()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                      Annuler
+                    </button>
+                    <button type="button" (click)="addExigence()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                      Ajouter l'exigence
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Liste des exigences -->
+              <div *ngIf="exigences.length > 0" class="pl-11 space-y-3">
+                <div *ngFor="let exigence of exigences; let i = index" class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">{{ exigence.type }}</span>
+                      </div>
+                      <h5 class="font-semibold text-gray-900 mb-1">{{ exigence.intitule }}</h5>
+                      <p class="text-sm text-gray-600 mb-1"><strong>Objectif Client:</strong> {{ exigence.objectifClient }}</p>
+                      <p class="text-sm text-gray-600">{{ exigence.description }}</p>
+                    </div>
+                    <button type="button" (click)="removeExigence(i)" class="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="exigences.length === 0 && !showExigenceForm" class="pl-11 text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p class="text-sm">Aucune exigence ajoutée. Cliquez sur "Ajouter une exigence" pour commencer.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
+            <button type="button" (click)="cancelNewProject()" class="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+              Annuler
+            </button>
+            <button type="button" (click)="createProject()" class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+              Créer le projet
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Filtres et recherche -->
+      <div *ngIf="!showNewProjectForm" class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex flex-col md:flex-row gap-4">
+          <div class="flex-1">
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input 
+                type="text" 
+                placeholder="Rechercher par ID, nom ou client..." 
+                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+            </div>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button class="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+              <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              <span class="text-sm">Tous les statuts</span>
+            </button>
+            <button class="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+              <span class="text-sm">Tous les clients</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tableau des projets -->
+      <div *ngIf="!showNewProjectForm" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Identifiant</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom du projet</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Nb exigences</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produit</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Mode Création</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Date de création</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Validation</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let projet of projets" class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="text-sm font-medium text-blue-600">{{ projet.codeProjet }}</span>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="text-sm text-gray-900">{{ projet.nom }}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="text-sm text-gray-900">{{ projet.client }}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="inline-flex items-center justify-center w-12 h-8 rounded-full bg-gray-100 text-sm font-medium text-gray-800">
+                    {{ projet.exigences?.length || 0 }}
+                  </span>
+                </td>
+            
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="text-sm text-gray-900">{{ projet.produit || 'N/A' }}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    {{ projet.modeCreation }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="text-sm text-gray-900">{{ projet.dateCreation | date:'dd/MM/yyyy' }}</span>
+                </td>
+
+                <!-- ═══ COLONNE VALIDATION ═══ -->
+                <td class="px-4 py-4 whitespace-nowrap text-center">
+
+                  <!-- Aucune demande → Demander validation -->
+                  <button *ngIf="getStatutValidation(projet.id) === 'AUCUNE' || getStatutValidation(projet.id) === 'EN_COURS'"
+                    (click)="ouvrirModalValidateur(projet, $event)"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-800 text-white text-xs font-medium rounded-lg hover:bg-slate-700 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                    Demander
+                  </button>
+
+                  <!-- EN_ATTENTE + je suis validateur → Valider -->
+                  <button *ngIf="getStatutValidation(projet.id) === 'EN_ATTENTE' && isValidateur(projet.id)"
+                    (click)="ouvrirDecision(projet, $event)"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 ring-2 ring-green-300 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Valider
+                  </button>
+
+                  <!-- EN_ATTENTE + pas validateur → badge info -->
+                  <span *ngIf="getStatutValidation(projet.id) === 'EN_ATTENTE' && !isValidateur(projet.id)"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-100 text-amber-700 text-xs rounded-lg">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    En attente · {{ validationStatus[projet.id!]?.validateurNom }}
+                  </span>
+
+                  <!-- VALIDE -->
+                  <span *ngIf="getStatutValidation(projet.id) === 'VALIDE'"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 text-xs font-semibold rounded-lg">
+                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    Validé
+                  </span>
+
+                  <!-- REVISION → Re-soumettre -->
+                  <button *ngIf="getStatutValidation(projet.id) === 'REVISION'"
+                    (click)="ouvrirModalValidateur(projet, $event)"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-lg hover:bg-orange-200 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Révision
+                  </button>
+
+                </td>
+                <!-- ═══ FIN COLONNE VALIDATION ═══ -->
+
+                <!-- Actions -->
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                  <button (click)="viewProjet(projet)"
+                    class="text-blue-600 hover:text-blue-900 font-medium text-xs mr-3">
+                    Détails
+                  </button>
+                  <button *ngIf="canEditProjet" (click)="deleteProjet(projet.id)"
+                    class="text-red-500 hover:text-red-700 text-xs font-medium">
+                    Supprimer
+                  </button>
+                </td>
+
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+
+  <!-- ╔═══ MODAL 1 : Choisir le validateur ════╗ -->
+  <div *ngIf="showValidateurModal"
+    class="fixed inset-0 z-[200] flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+
+      <div class="bg-slate-900 px-6 py-4 rounded-t-xl flex justify-between items-center">
+        <div>
+          <h3 class="text-white font-semibold text-base">Choisir le validateur</h3>
+          <p class="text-slate-400 text-xs mt-0.5">{{ selectedProjetForValidation?.nom }}</p>
+        </div>
+        <button (click)="showValidateurModal = false" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5">
+        <p class="text-sm text-gray-500 mb-4">
+          La personne choisie recevra un <strong>email</strong> avec un lien vers ce projet.
+          Elle verra le bouton <strong>«Valider»</strong> dans l'application.
+        </p>
+
+        <div class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-50">
+          <div *ngFor="let user of users"
+            (click)="selectedValidateurId = user.id"
+            [class.bg-blue-50]="selectedValidateurId === user.id"
+            [class.border-l-4]="selectedValidateurId === user.id"
+            [class.border-l-blue-600]="selectedValidateurId === user.id"
+            class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition">
+            <div class="w-9 h-9 rounded-full bg-slate-700 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+              {{ (user.firstname || 'U').charAt(0).toUpperCase() }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">{{ user.firstname }} {{ user.lastname }}</p>
+              <p class="text-xs text-gray-500 truncate">{{ user.email }}</p>
+              <span class="text-xs text-blue-600 font-medium">{{ user.role }}</span>
+            </div>
+            <svg *ngIf="selectedValidateurId === user.id"
+              class="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <div *ngIf="users.length === 0" class="px-4 py-10 text-center text-sm text-gray-400">
+            Chargement des utilisateurs...
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-5">
+          <button (click)="showValidateurModal = false"
+            class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">
+            Annuler
+          </button>
+          <button (click)="confirmerDemande()"
+            [disabled]="!selectedValidateurId || isSubmittingValidation"
+            class="px-5 py-2 text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed font-medium">
+            {{ isSubmittingValidation ? 'Envoi...' : 'Envoyer la demande' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ╔═══ MODAL 2 : Décision du validateur ════╗ -->
+  <div *ngIf="showDecisionModal"
+    class="fixed inset-0 z-[200] flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4">
+
+      <div class="bg-green-700 px-6 py-4 rounded-t-xl flex justify-between items-center">
+        <div>
+          <h3 class="text-white font-semibold text-base">Votre décision</h3>
+          <p class="text-green-200 text-xs mt-0.5">{{ decisionProjetNom }}</p>
+        </div>
+        <button (click)="showDecisionModal = false" class="text-green-200 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Commentaire <span class="text-gray-400 font-normal">(optionnel)</span>
+        </label>
+        <textarea [(ngModel)]="decisionCommentaire" [ngModelOptions]="{standalone: true}" rows="3"
+          placeholder="Vos remarques, conditions, points à corriger..."
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 mb-5">
+        </textarea>
+
+        <div class="flex gap-3">
+          <button (click)="soumettrDecision('VALIDE')" [disabled]="isSubmittingValidation"
+            class="flex-1 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Valider
+          </button>
+          <button (click)="soumettrDecision('REVISION')" [disabled]="isSubmittingValidation"
+            class="flex-1 py-3 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Révision
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

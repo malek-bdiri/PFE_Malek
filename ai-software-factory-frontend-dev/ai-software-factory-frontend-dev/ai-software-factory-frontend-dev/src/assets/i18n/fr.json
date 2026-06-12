@@ -1,0 +1,67 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "projets": "Besoin projet",
+    "analyse": "Analyse fonctionnelle",
+    "tests": "Tests",
+    "parametres": "Paramètres",
+    "planning": "Planification",
+    "uiux": "UI / UX",
+    "architecture": "Architecture",
+    "automation": "Automatisation"
+  },
+  "projet": {
+    "nouveau": "Nouveau projet",
+    "nom": "Nom du projet",
+    "code": "Code projet",
+    "client": "Client",
+    "produit": "Produit",
+    "description": "Description",
+    "mode_ia": "Génération IA",
+    "mode_manuel": "Mode manuel",
+    "creer": "Créer le projet",
+    "annuler": "Annuler",
+    "generer_ia": "Générer avec IA",
+    "succes": "Projet créé avec succès !",
+    "erreur_champs": "Veuillez remplir les champs obligatoires",
+    "erreur_client": "Veuillez sélectionner un client",
+    "erreur_exigence": "Veuillez ajouter au moins une exigence"
+  },
+  "exigence": {
+    "titre": "Exigences",
+    "ajouter": "Ajouter une exigence",
+    "type": "Type",
+    "intitule": "Intitulé",
+    "objectif": "Objectif client",
+    "description": "Description",
+    "solution": "Solution proposée",
+    "limites": "Limites / Hypothèses",
+    "valider": "Valider",
+    "rejeter": "Rejeter"
+  },
+  "validation": {
+    "demander": "Demander validation",
+    "en_attente": "En attente",
+    "valide": "Validé",
+    "revision": "À revoir",
+    "choisir_validateur": "Choisir un validateur",
+    "confirmer": "Confirmer la demande"
+  },
+  "statut": {
+    "en_cours": "En cours",
+    "valide": "Validé",
+    "en_attente": "En attente",
+    "a_revoir": "À revoir"
+  },
+  "commun": {
+    "rechercher": "Rechercher...",
+    "supprimer": "Supprimer",
+    "modifier": "Modifier",
+    "enregistrer": "Enregistrer",
+    "fermer": "Fermer",
+    "aucun": "Aucun résultat",
+    "oui": "Oui",
+    "non": "Non",
+    "deconnexion": "Déconnexion"
+  }
+}

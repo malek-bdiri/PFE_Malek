@@ -1,0 +1,351 @@
+<div class="p-6">
+  <div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-900">Modules par produit</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Gérez la création de modules et leur affectation aux produits.
+      Configuration fonctionnelle utilisée comme référence pour le chiffrage des licences.
+    </p>
+  </div>
+
+  <!-- Sélection produit + actions -->
+  <div class="flex items-end gap-4 mb-6">
+    <div class="w-72">
+      <label class="block text-sm font-medium text-gray-700 mb-1">Produit *</label>
+      <select [(ngModel)]="selectedProduitId" (ngModelChange)="onProduitChange()"
+        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500">
+        <option [ngValue]="null">Sélectionner un produit...</option>
+        <option *ngFor="let p of produits" [ngValue]="p.id">
+          {{ p.produitCode }} - {{ p.nom }}
+        </option>
+      </select>
+    </div>
+
+    <button *ngIf="selectedProduitId" (click)="openCreateModal()"
+      class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+      Créer un module
+    </button>
+
+    <button *ngIf="selectedProduitId" (click)="openAffectModal()"
+      class="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+      </svg>
+      Affecter des modules
+    </button>
+  </div>
+
+  <!-- Message si pas de produit sélectionné -->
+  <div *ngIf="!selectedProduitId"
+    class="text-center py-12 text-gray-400 text-sm border border-dashed border-gray-200 rounded-lg">
+    Sélectionnez un produit pour afficher ses modules
+  </div>
+
+  <!-- Tableau modules -->
+  <div *ngIf="selectedProduitId" class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+
+    <div *ngIf="isLoading" class="text-center py-8 text-sm text-gray-400">Chargement...</div>
+
+    <table *ngIf="!isLoading" class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
+          <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Obligatoire</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Prix Oneshot</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Prix Yearly</th>
+          <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Statut</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr *ngFor="let m of modules" class="hover:bg-gray-50">
+          <td class="px-4 py-3 text-sm font-bold text-gray-900">{{ m.code }}</td>
+          <td class="px-4 py-3 text-sm text-gray-700">{{ m.nom }}</td>
+          <td class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">{{ m.description }}</td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-0.5 text-xs border border-gray-300 rounded-full text-gray-600">
+              {{ m.categorie || '—' }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <button type="button" (click)="toggleObligatoire(m)"
+              class="relative inline-flex h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none"
+              [class.bg-blue-600]="m.obligatoire"
+              [class.bg-gray-200]="!m.obligatoire">
+              <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 mt-0.5"
+                [class.translate-x-5]="m.obligatoire"
+                [class.translate-x-0.5]="!m.obligatoire">
+              </span>
+            </button>
+          </td>
+          <td class="px-4 py-3 text-right text-sm text-gray-700">
+            {{ (m.prixOneshot || 0) | number:'1.0-0' }} €
+          </td>
+          <td class="px-4 py-3 text-right text-sm text-gray-700">
+            {{ (m.prixYearly || 0) | number:'1.0-0' }} €
+          </td>
+          <td class="px-4 py-3 text-center">
+            <span class="px-2 py-0.5 text-xs font-medium rounded"
+              [class.bg-green-100]="m.statut === 'Actif'" [class.text-green-800]="m.statut === 'Actif'"
+              [class.bg-red-100]="m.statut === 'Inactif'" [class.text-red-800]="m.statut === 'Inactif'">
+              {{ m.statut }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <button (click)="openEditModal(m)" class="text-blue-500 hover:text-blue-700 mr-3">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+              </svg>
+            </button>
+            <button (click)="deleteModule(m)" class="text-red-500 hover:text-red-700">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="modules.length === 0 && !isLoading">
+          <td colspan="9" class="px-4 py-8 text-center text-sm text-gray-400">
+            Aucun module pour ce produit. Créez ou affectez des modules.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MODAL CRÉER MODULE ═══════════════════════════════ -->
+<div *ngIf="showCreateModal" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75" (click)="showCreateModal=false"></div>
+    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-lg z-10">
+
+      <div class="flex justify-between items-center px-6 pt-5 pb-4 border-b">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900">Créer un module</h3>
+          <p class="text-xs text-gray-500 mt-1">
+            Le module sera automatiquement affecté à <strong>{{ selectedProduitNom }}</strong>.
+          </p>
+        </div>
+        <button (click)="showCreateModal=false" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+
+      <div class="px-6 py-5 space-y-4">
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Code *</label>
+            <input type="text" [(ngModel)]="newModule.code" placeholder="CORE-001"
+              (ngModelChange)="onCodeChange()"
+              [class.border-red-400]="codeEnDoublon"
+              [class.border-gray-300]="!codeEnDoublon"
+              class="w-full border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500">
+            <p *ngIf="codeEnDoublon" class="text-xs text-red-600 mt-1">Ce code existe déjà.</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie *</label>
+            <select [(ngModel)]="newModule.categorie"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500">
+              <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+          <input type="text" [(ngModel)]="newModule.nom" placeholder="Core Platform"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea [(ngModel)]="newModule.description" rows="3"
+            placeholder="Description du module..."
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 resize-none">
+          </textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+          <input type="text" [(ngModel)]="newModule.tags"
+            placeholder="base, auth, core (séparés par des virgules)"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+            <select [(ngModel)]="newModule.statut"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500">
+              <option value="Actif">Actif</option>
+              <option value="Inactif">Inactif</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-3 mt-5">
+            <button type="button" (click)="newModule.obligatoire = !newModule.obligatoire"
+              class="relative inline-flex h-6 w-11 rounded-full transition-colors focus:outline-none"
+              [class.bg-blue-600]="newModule.obligatoire"
+              [class.bg-gray-200]="!newModule.obligatoire">
+              <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition mt-0.5"
+                [class.translate-x-5]="newModule.obligatoire"
+                [class.translate-x-0.5]="!newModule.obligatoire">
+              </span>
+            </button>
+            <span class="text-sm text-gray-700">Obligatoire</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
+        <button (click)="showCreateModal=false"
+          class="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">
+          Annuler
+        </button>
+        <button (click)="saveNewModule()" [disabled]="isSaving || codeEnDoublon"
+          class="px-5 py-2 text-sm bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50">
+          {{ isSaving ? 'Création...' : 'Créer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MODAL AFFECTER ═══════════════════════════════ -->
+<div *ngIf="showAffectModal" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75" (click)="showAffectModal=false"></div>
+    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-2xl z-10">
+      <div class="flex justify-between items-center px-6 pt-5 pb-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900">Affecter des modules à {{ selectedProduitNom }}</h3>
+        <button (click)="showAffectModal=false" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+
+      <div class="px-6 py-5">
+        <div *ngIf="modulesNonAffectes.length === 0" class="text-center py-6 text-sm text-gray-400">
+          Tous les modules existants sont déjà affectés à ce produit.
+        </div>
+
+        <div *ngIf="modulesNonAffectes.length > 0"
+          class="border border-gray-200 rounded-lg overflow-hidden max-h-80 overflow-y-auto">
+          <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50 sticky top-0">
+              <tr>
+                <th class="w-10 px-4 py-3"></th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let m of modulesNonAffectes"
+                class="cursor-pointer hover:bg-gray-50"
+                (click)="toggleAffect(m.id!)">
+                <td class="px-4 py-3 text-center">
+                  <input type="checkbox" [checked]="selectedModuleIdsToAffect.has(m.id!)"
+                    class="h-4 w-4 text-blue-600 rounded">
+                </td>
+                <td class="px-4 py-3 font-medium text-gray-900">{{ m.code }}</td>
+                <td class="px-4 py-3 text-gray-700">{{ m.nom }}</td>
+                <td class="px-4 py-3">
+                  <span class="px-2 py-0.5 text-xs border border-gray-300 rounded-full">{{ m.categorie || '—' }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
+        <button (click)="showAffectModal=false"
+          class="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">
+          Annuler
+        </button>
+        <button (click)="confirmerAffectation()"
+          [disabled]="selectedModuleIdsToAffect.size === 0"
+          class="px-5 py-2 text-sm bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-40">
+          Affecter ({{ selectedModuleIdsToAffect.size }})
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MODAL ÉDITION ═══════════════════════════════ -->
+<div *ngIf="showEditModal && editingModule" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75" (click)="showEditModal=false"></div>
+    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-lg z-10">
+      <div class="flex justify-between items-center px-6 pt-5 pb-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900">Modifier le module</h3>
+        <button (click)="showEditModal=false" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+
+      <div class="px-6 py-5 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Code *</label>
+            <input type="text" [(ngModel)]="editingModule!.code"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie *</label>
+            <select [(ngModel)]="editingModule!.categorie"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+              <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+          <input type="text" [(ngModel)]="editingModule!.nom"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea [(ngModel)]="editingModule!.description" rows="3"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-none"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+            <select [(ngModel)]="editingModule!.statut"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+              <option value="Actif">Actif</option>
+              <option value="Inactif">Inactif</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-3 mt-5">
+            <button type="button" (click)="editingModule!.obligatoire = !editingModule!.obligatoire"
+              class="relative inline-flex h-6 w-11 rounded-full transition-colors focus:outline-none"
+              [class.bg-blue-600]="editingModule!.obligatoire"
+              [class.bg-gray-200]="!editingModule!.obligatoire">
+              <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition mt-0.5"
+                [class.translate-x-5]="editingModule!.obligatoire"
+                [class.translate-x-0.5]="!editingModule!.obligatoire">
+              </span>
+            </button>
+            <span class="text-sm text-gray-700">Obligatoire</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
+        <button (click)="showEditModal=false"
+          class="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">
+          Annuler
+        </button>
+        <button (click)="saveEdit()" [disabled]="isSaving"
+          class="px-5 py-2 text-sm bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50">
+          {{ isSaving ? 'Sauvegarde...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

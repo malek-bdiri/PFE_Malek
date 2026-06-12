@@ -1,0 +1,883 @@
+<div *ngIf="loading" class="text-center py-20 text-gray-400">Chargement...</div>
+
+<div *ngIf="!loading && spec">
+
+  <!-- Breadcrumb -->
+  <div class="text-sm text-gray-500 mb-4">
+    <span routerLink="/admin/dashboard" class="cursor-pointer hover:text-gray-700">Tableau de bord</span>
+    <span class="mx-2">›</span>
+    <span routerLink="/admin/uiux" class="cursor-pointer hover:text-gray-700">UI / UX Design</span>
+    <span class="mx-2">›</span>
+    <span class="text-gray-900 font-medium">{{ spec.code }}</span>
+  </div>
+
+  <!-- Header -->
+<div class="flex items-start justify-between mb-6">
+  <div class="flex items-center gap-4">
+    <button (click)="goBack()"
+            class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+      ←
+    </button>
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">{{ spec.nom }}</h1>
+      <div class="flex items-center gap-2 text-xs text-gray-400 mt-1">
+        <span>Projet: {{ spec.projet?.nom }}</span>
+        <span>•</span>
+        <span>Dernière modification: {{ spec.derniereMaj | date:'yyyy-MM-dd' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-3">
+
+    <!-- Version + Statut avec dropdown -->
+    <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+      <div class="flex items-center gap-2 px-3 py-2">
+        <span class="text-sm font-medium text-gray-700">{{ spec.version }} (Actuelle)</span>
+        <span class="px-2 py-0.5 rounded text-xs font-medium"
+              [ngClass]="getStatutClass(spec.statut || '')">
+          {{ spec.statut }}
+        </span>
+      </div>
+      <button class="px-2 py-2 border-l border-gray-300 hover:bg-gray-50">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-gray-500">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Régénérer -->
+    <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+      </svg>
+      Régénérer
+    </button>
+
+    <!-- AI Adjust -->
+    <button class="flex items-center gap-2 px-4 py-2 border border-blue-500 text-blue-600 rounded-lg text-sm hover:bg-blue-50">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+      </svg>
+      AI Adjust
+    </button>
+
+    <!-- Export Markdown -->
+    <button (click)="exportMarkdown()"
+            class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+      </svg>
+      Export Markdown
+    </button>
+
+    <!-- Valider -->
+    <button (click)="valider()"
+            [disabled]="spec.statut === 'Validé'"
+            class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm disabled:opacity-50"
+            [ngClass]="spec.statut === 'Validé' 
+              ? 'bg-green-500 text-white cursor-default' 
+              : 'border border-green-500 text-green-600 hover:bg-green-50'">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      Validé
+    </button>
+
+  </div>
+</div>
+
+  <!-- Tabs -->
+  <div class="flex gap-0 border-b border-gray-200 mb-6 overflow-x-auto">
+    <button *ngFor="let tab of tabs"
+            (click)="activeTab = tab.id"
+            [class.border-b-2]="activeTab === tab.id"
+            [class.border-blue-600]="activeTab === tab.id"
+            [class.text-blue-600]="activeTab === tab.id"
+            [class.text-gray-500]="activeTab !== tab.id"
+            class="px-4 py-3 text-sm font-medium whitespace-nowrap">
+      {{ tab.label }}
+    </button>
+  </div>
+
+  <!-- ========== OVERVIEW ========== -->
+  <div *ngIf="activeTab === 'overview'">
+    <div class="flex gap-6">
+
+      <!-- Contenu principal -->
+      <div class="flex-1 space-y-6">
+
+        <!-- Résumé -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 class="text-base font-semibold mb-4">Résumé du design</h2>
+          <p class="text-sm text-gray-500 mb-6">
+            Spécification UI/UX pour {{ spec.projet?.nom }}
+          </p>
+          <div class="grid grid-cols-2 gap-6 text-sm">
+            <div>
+              <p class="text-gray-500 mb-1">Plateforme</p>
+              <p class="font-medium">{{ spec.plateformes?.join(', ') || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-gray-500 mb-1">Complexité UX</p>
+              <p class="font-medium">{{ spec.complexiteUx || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-gray-500 mb-1">Style</p>
+              <p class="font-medium">{{ spec.styleDesign || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-gray-500 mb-1">Accessibilité</p>
+              <p class="font-medium">{{ spec.niveauAccessibilite || '-' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Palette couleurs -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-2">
+              <span class="text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
+</svg>
+
+</span>
+              <h2 class="text-base font-semibold">Palette de couleurs</h2>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <div *ngFor="let color of paletteColors"
+                 class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-lg shadow-sm"
+                   [style.background-color]="color.hex"></div>
+              <div>
+                <p class="text-sm font-medium">{{ color.name }}</p>
+                <p class="text-xs text-gray-400">{{ color.hex }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Système typographique -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-blue-500 font-bold"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" id="Letter-T--Streamline-Tabler" height="24" width="24">
+  <desc>
+    Letter T Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path d="m6 4 12 0" stroke-width="2"></path>
+  <path d="m12 4 0 16" stroke-width="2"></path>
+</svg></span>
+            <h2 class="text-base font-semibold">Système typographique</h2>
+          </div>
+          <div *ngIf="systemeTypo">
+            <p class="text-sm font-medium mb-3">
+              Font Family: {{ systemeTypo.fontFamily }}, system-ui, sans-serif
+            </p>
+            <p class="text-sm font-medium mb-2">Scale</p>
+            <div class="space-y-1">
+              <p *ngFor="let s of systemeTypo.scale"
+                 class="text-sm text-gray-600">
+                {{ s.label }}: {{ s.value }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Système espacement -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+</svg>
+</span>
+            <h2 class="text-base font-semibold">Système d'espacement</h2>
+          </div>
+          <div class="space-y-1">
+            <p *ngFor="let e of systemeEspacement"
+               class="text-sm text-gray-600">{{ e.label }}</p>
+          </div>
+        </div>
+
+        <!-- Élévation -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" id="Grid-4x4--Streamline-Tabler" height="24" width="24">
+  <desc>
+    Grid 4x4 Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path d="M3 6h18" stroke-width="2"></path>
+  <path d="M3 12h18" stroke-width="2"></path>
+  <path d="M3 18h18" stroke-width="2"></path>
+  <path d="M6 3v18" stroke-width="2"></path>
+  <path d="M12 3v18" stroke-width="2"></path>
+  <path d="M18 3v18" stroke-width="2"></path>
+</svg>
+            <h2 class="text-base font-semibold">Élévation et ombres</h2>
+          </div>
+          <div class="space-y-3">
+            <div *ngFor="let e of elevation"
+                 class="bg-gray-50 rounded-lg p-3">
+              <p class="text-sm font-medium text-gray-700">{{ e.label }}</p>
+              <p class="text-xs text-gray-400 mt-1">{{ e.value }}</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Navigation sidebar droite -->
+      <div class="w-48">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 sticky top-4">
+          <h3 class="text-sm font-semibold text-gray-900 mb-3">Navigation</h3>
+          <div class="space-y-2 text-sm text-gray-500">
+            <p class="cursor-pointer hover:text-gray-700">Palette de couleurs</p>
+            <p class="cursor-pointer hover:text-gray-700">Système typographique</p>
+            <p class="cursor-pointer hover:text-gray-700">Système d'espacement</p>
+            <p class="cursor-pointer hover:text-gray-700">Élévation</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========== DESIGN RULES ========== -->
+  <div *ngIf="activeTab === 'design-rules'" class="space-y-6">
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex justify-between items-center mb-4">
+      <div class="flex items-center gap-2">
+        <span class="text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59" />
+</svg>
+
+</span>
+        <h2 class="text-base font-semibold">Principes UX</h2>
+      </div>
+    </div>
+    <div class="space-y-2 text-sm text-gray-700">
+      <p>Minimiser les clics pour les actions courantes</p>
+      <p>Fournir un feedback visuel immédiat pour toutes les interactions</p>
+      <p>Utiliser des labels clairs et descriptifs</p>
+      <p>Grouper les informations liées visuellement</p>
+      <p>Maintenir la cohérence à travers toutes les pages</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" id="Grid-4x4--Streamline-Tabler" height="24" width="24">
+  <desc>
+    Grid 4x4 Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path d="M3 6h18" stroke-width="2"></path>
+  <path d="M3 12h18" stroke-width="2"></path>
+  <path d="M3 18h18" stroke-width="2"></path>
+  <path d="M6 3v18" stroke-width="2"></path>
+  <path d="M12 3v18" stroke-width="2"></path>
+  <path d="M18 3v18" stroke-width="2"></path>
+</svg>
+      <h2 class="text-base font-semibold">Border radius</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>sm: 4px - Inputs, badges</p>
+      <p>md: 8px - Buttons, cards</p>
+      <p>lg: 12px - Modals, large containers</p>
+      <p>full: 9999px - Pills, avatars</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" id="Palette--Streamline-Tabler" height="24" width="24">
+  <desc>
+    Palette Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path d="M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8 0 1.06 -0.474 2.078 -1.318 2.828 -0.844 0.75 -1.989 1.172 -3.182 1.172H14a2 2 0 0 0 -1 3.75A1.3 1.3 0 0 1 12 21" stroke-width="2"></path>
+  <path d="M7.5 10.5a1 1 0 1 0 2 0 1 1 0 1 0 -2 0" stroke-width="2"></path>
+  <path d="M11.5 7.5a1 1 0 1 0 2 0 1 1 0 1 0 -2 0" stroke-width="2"></path>
+  <path d="M15.5 10.5a1 1 0 1 0 2 0 1 1 0 1 0 -2 0" stroke-width="2"></path>
+</svg></span>
+      <h2 class="text-base font-semibold">Iconographie</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>Library: Lucide Icons</p>
+      <p>Taille par défaut: 20px (1.25rem)</p>
+      <p>Taille petite: 16px (1rem)</p>
+      <p>Taille grande: 24px (1.5rem)</p>
+      <p>Stroke width: 2px</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59" />
+</svg>
+
+</span>
+      <h2 class="text-base font-semibold">Principes d'animation</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>Durée standard: 200ms</p>
+      <p>Easing: ease-in-out</p>
+      <p class="mt-2">Utiliser les animations pour:</p>
+      <p>- Transitions de page</p>
+      <p>- Ouverture/fermeture de modales</p>
+      <p>- Hover states</p>
+      <p>- Loading states</p>
+    </div>
+  </div>
+
+</div>
+
+  <!-- ========== COMPONENTS ========== -->
+  <div *ngIf="activeTab === 'components'" class="space-y-4">
+
+  <div class="grid grid-cols-2 gap-4">
+
+    <div *ngFor="let comp of components"
+         class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-sm font-semibold text-gray-900">{{ comp.name }}</h3>
+        <button class="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+</svg>
+ AI Adjust
+        </button>
+      </div>
+      <div class="mb-3">
+        <p class="text-xs text-gray-500 mb-2">Variants</p>
+        <div class="flex flex-wrap gap-2">
+          <span *ngFor="let v of comp.variants"
+                class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+            {{ v }}
+          </span>
+        </div>
+      </div>
+      <div>
+        <p class="text-xs text-gray-500 mb-2">States</p>
+        <div class="flex flex-wrap gap-2">
+          <span *ngFor="let s of comp.states"
+                class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+            {{ s }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+  <!-- ========== LAYOUT SYSTEM ========== -->
+  <div *ngIf="activeTab === 'layout'" class="space-y-6">
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" id="Grid-4x4--Streamline-Tabler" height="24" width="24">
+  <desc>
+    Grid 4x4 Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path d="M3 6h18" stroke-width="2"></path>
+  <path d="M3 12h18" stroke-width="2"></path>
+  <path d="M3 18h18" stroke-width="2"></path>
+  <path d="M6 3v18" stroke-width="2"></path>
+  <path d="M12 3v18" stroke-width="2"></path>
+  <path d="M18 3v18" stroke-width="2"></path>
+</svg>
+      <h2 class="text-base font-semibold">Grille</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p class="font-medium">12-column grid system</p>
+      <p>Gutter: 24px (1.5rem)</p>
+      <p>Container max-width: 1280px</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" id="Arrows-Double-Ne-Sw--Streamline-Tabler" height="24" width="24">
+  <desc>
+    Arrows Double Ne Sw Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path d="M3 14 14 3" stroke-width="2"></path>
+  <path d="M10 3h4v4" stroke-width="2"></path>
+  <path d="M10 17v4h4" stroke-width="2"></path>
+  <path d="M21 10 10 21" stroke-width="2"></path>
+</svg></span>
+      <h2 class="text-base font-semibold">Breakpoints</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>Mobile: &lt; 640px</p>
+      <p>Tablet: 640px - 1024px</p>
+      <p>Desktop: 1024px - 1280px</p>
+      <p>Large Desktop: &gt; 1280px</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" id="Template--Streamline-Tabler" height="24" width="24">
+  <desc>
+    Template Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path d="M4 5a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1H5a1 1 0 0 1 -1 -1z" stroke-width="2"></path>
+  <path d="M4 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1H5a1 1 0 0 1 -1 -1z" stroke-width="2"></path>
+  <path d="m14 12 6 0" stroke-width="2"></path>
+  <path d="m14 16 6 0" stroke-width="2"></path>
+  <path d="m14 20 6 0" stroke-width="2"></path>
+</svg>
+      <h2 class="text-base font-semibold">Page Templates</h2>
+    </div>
+    <div class="space-y-2 text-sm text-gray-700">
+      <div>
+        <p class="font-medium">Dashboard Layout</p>
+        <p class="text-gray-500">Header (64px) + Sidebar (256px) + Content</p>
+      </div>
+      <div>
+        <p class="font-medium">Full Width Layout</p>
+        <p class="text-gray-500">Header (64px) + Content (full width)</p>
+      </div>
+      <div>
+        <p class="font-medium">Centered Layout</p>
+        <p class="text-gray-500">Header (64px) + Content (max 800px centered)</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" id="Layout-Sidebar--Streamline-Tabler" height="24" width="24">
+  <desc>
+    Layout Sidebar Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2H6a2 2 0 0 1 -2 -2z" stroke-width="2"></path>
+  <path d="m9 4 0 16" stroke-width="2"></path>
+</svg>
+      <h2 class="text-base font-semibold">Sidebar Patterns</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>Width: 256px (desktop), 64px (collapsed)</p>
+      <p>Position: Fixed left</p>
+      <p>Background: White with border</p>
+      <p>Mobile: Overlay drawer</p>
+    </div>
+  </div>
+
+</div>
+
+  <!-- ========== INTERACTIONS ========== -->
+  <div *ngIf="activeTab === 'interactions'" class="space-y-6">
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59" />
+</svg>
+
+</span>
+      <h2 class="text-base font-semibold">Hover States</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>Buttons: Background change + subtle scale (1.02)</p>
+      <p>Links: Underline + color change</p>
+      <p>Cards: Border color change + shadow increase</p>
+      <p>Table rows: Background color (#f9fafb)</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59" />
+</svg>
+
+</span>
+      <h2 class="text-base font-semibold">Click/Tap Feedback</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>Buttons: Scale down (0.98) + ripple effect</p>
+      <p>Touch targets: Minimum 44x44px</p>
+      <p>Loading: Show spinner + disable interaction</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" id="Template--Streamline-Tabler" height="24" width="24">
+  <desc>
+    Template Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path d="M4 5a1 1 0 0 1 1 -1h14a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1H5a1 1 0 0 1 -1 -1z" stroke-width="2"></path>
+  <path d="M4 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1H5a1 1 0 0 1 -1 -1z" stroke-width="2"></path>
+  <path d="m14 12 6 0" stroke-width="2"></path>
+  <path d="m14 16 6 0" stroke-width="2"></path>
+  <path d="m14 20 6 0" stroke-width="2"></path>
+</svg>
+      <h2 class="text-base font-semibold">Navigation Behavior</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>Page transitions: Fade (200ms)</p>
+      <p>Modal open: Slide up + backdrop fade</p>
+      <p>Drawer open: Slide from side</p>
+      <p>Scroll to top on page change</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+</svg>
+</span>
+      <h2 class="text-base font-semibold">Form Validation</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>Real-time validation on blur</p>
+      <p>Error: Red border + error message below</p>
+      <p>Success: Green border + checkmark icon</p>
+      <p>Disable submit until valid</p>
+    </div>
+  </div>
+
+</div>
+
+  <!-- ========== ACCESSIBILITE ========== -->
+  <div *ngIf="activeTab === 'accessibilite'" class="space-y-6">
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" id="Palette--Streamline-Tabler" height="24" width="24">
+  <desc>
+    Palette Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path d="M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8 0 1.06 -0.474 2.078 -1.318 2.828 -0.844 0.75 -1.989 1.172 -3.182 1.172H14a2 2 0 0 0 -1 3.75A1.3 1.3 0 0 1 12 21" stroke-width="2"></path>
+  <path d="M7.5 10.5a1 1 0 1 0 2 0 1 1 0 1 0 -2 0" stroke-width="2"></path>
+  <path d="M11.5 7.5a1 1 0 1 0 2 0 1 1 0 1 0 -2 0" stroke-width="2"></path>
+  <path d="M15.5 10.5a1 1 0 1 0 2 0 1 1 0 1 0 -2 0" stroke-width="2"></path>
+</svg></span>
+      <h2 class="text-base font-semibold">Contraste des couleurs</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p class="font-medium">{{ spec.niveauAccessibilite }} Compliance</p>
+      <p>Texte normal: Ratio minimum 4.5:1</p>
+      <p>Texte large: Ratio minimum 3:1</p>
+      <p>Éléments UI: Ratio minimum 3:1</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59" />
+</svg>
+
+</span>
+      <h2 class="text-base font-semibold">Navigation au clavier</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>Tous les éléments interactifs accessibles par Tab</p>
+      <p>Focus visible avec outline bleu ({{ spec.couleurPrimaire }})</p>
+      <p>Skip links pour navigation rapide</p>
+      <p>Escape pour fermer modales/dropdowns</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" id="Disabled-2--Streamline-Tabler" height="24" width="24">
+  <desc>
+    Disabled 2 Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path d="M15 6a2 2 0 1 0 4 0 2 2 0 1 0 -4 0" stroke-width="2"></path>
+  <path d="M9 11a5 5 0 1 0 3.95 7.95" stroke-width="2"></path>
+  <path d="m19 20 -4 -5h-4l3 -5 -4 -3 -4 1" stroke-width="2"></path>
+</svg></span>
+      <h2 class="text-base font-semibold">Lecteurs d'écran</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>Utiliser aria-label pour icônes seules</p>
+      <p>aria-describedby pour messages d'erreur</p>
+      <p>role="alert" pour notifications importantes</p>
+      <p>Landmarks sémantiques (header, nav, main, footer)</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0 1 12 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5" />
+</svg>
+
+      <h2 class="text-base font-semibold">Responsive & Mobile</h2>
+    </div>
+    <div class="space-y-1 text-sm text-gray-700">
+      <p>Touch targets: Minimum 44x44px</p>
+      <p>Text minimum 16px (éviter zoom sur mobile)</p>
+      <p>Pas de hover-only interactions</p>
+      <p>Orientation portrait et landscape supportées</p>
+      <p *ngIf="spec.supportMultiLangue" class="text-blue-600 font-medium mt-2">
+        ✓ Support multi-langue activé (RTL/LTR)
+      </p>
+    </div>
+  </div>
+
+</div>
+
+  <!-- ========== UI SPEC BY AFD ========== -->
+   
+  <!-- ========== UI SPEC BY AFD ========== -->
+<div *ngIf="activeTab === 'ui-spec-afd'" class="space-y-4">
+
+  <!-- Header + Actions -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-base font-semibold text-gray-900">AFD liés au projet</h2>
+      <p class="text-sm text-gray-400 mt-0.5">Chaque AFD peut avoir une UI Specification associée - relation 1:1</p>
+    </div>
+    <div class="flex gap-3">
+      <button class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+</svg>
+
+        Générer UI Spec depuis AFD
+      </button>
+      <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+        + Ajouter UI Spec manuellement
+      </button>
+    </div>
+  </div>
+
+  <!-- Tableau AFDs -->
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+
+    <!-- Empty state -->
+    <div *ngIf="uiSpecAfds.length === 0" class="p-10 text-center text-gray-400">
+      <p class="text-sm">Aucun AFD trouvé pour ce projet.</p>
+      <p class="text-xs mt-1">Créez des AFDs dans le module Analyse fonctionnelle d'abord.</p>
+    </div>
+
+    <!-- Table -->
+    <table *ngIf="uiSpecAfds.length > 0" class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">AFD Code</th>
+          <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Titre AFD</th>
+          <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Complexité fonctionnelle</th>
+          <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Statut AFD</th>
+          <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Statut UX</th>
+          <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <tr *ngFor="let item of uiSpecAfds" class="hover:bg-gray-50 transition-colors">
+
+          <!-- AFD Code -->
+          <td class="px-5 py-4">
+            <span class="text-blue-600 font-mono text-xs font-medium cursor-pointer hover:underline">
+              {{ item.afd?.code }}
+            </span>
+          </td>
+
+          <!-- Titre AFD -->
+          <td class="px-5 py-4">
+            <span class="text-gray-900 font-medium">{{ item.afd?.intitule }}</span>
+          </td>
+
+          <!-- Complexité fonctionnelle -->
+          <td class="px-5 py-4">
+            <span [ngClass]="{
+              'bg-red-100 text-red-700':    item.afd?.complexiteFonctionnelle === 'Élevée',
+              'bg-yellow-100 text-yellow-700': item.afd?.complexiteFonctionnelle === 'Moyenne',
+              'bg-green-100 text-green-700': item.afd?.complexiteFonctionnelle=== 'Faible'
+            }" class="px-2 py-1 rounded-full text-xs font-medium">
+              {{ item.afd?.complexiteFonctionnelle || '-' }}
+            </span>
+          </td>
+
+          <!-- Statut AFD -->
+          <td class="px-5 py-4">
+            <span [ngClass]="{
+              'bg-green-100 text-green-700': item.afd?.statut === 'Validé',
+              'bg-blue-100 text-blue-700':   item.afd?.statut === 'Généré',
+              'bg-gray-100 text-gray-600':   item.afd?.statut === 'Brouillon'
+            }" class="px-2 py-1 rounded-full text-xs font-medium">
+              {{ item.afd?.statut || 'Validé' }}
+            </span>
+          </td>
+
+          <!-- Statut UX -->
+          <td class="px-5 py-4">
+            <span [ngClass]="{
+              'bg-green-100 text-green-700':  item.statutUx === 'Validé',
+              'bg-blue-100 text-blue-700':    item.statutUx === 'Généré',
+              'bg-orange-100 text-orange-700': item.statutUx === 'Obsolète',
+              'bg-gray-100 text-gray-500':    item.statutUx === 'Non généré' || !item.statutUx
+            }" class="px-2 py-1 rounded-full text-xs font-medium">
+              {{ item.statutUx || 'Non généré' }}
+            </span>
+          </td>
+
+          <!-- Actions -->
+<td class="px-5 py-4">
+  <div class="flex items-center gap-2">
+
+    <!-- Généré ou Validé → Ouvrir -->
+    <button *ngIf="item.statutUx === 'Généré' || item.statutUx === 'Validé'"
+            [routerLink]="['/admin/uiux', specId, 'ui-spec', item.id]"
+            class="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+      </svg>
+      Ouvrir
+    </button>
+
+    <!-- Obsolète → Ouvrir + Régénérer -->
+    <button *ngIf="item.statutUx === 'Obsolète'"
+            [routerLink]="['/admin/uiux', specId, 'ui-spec', item.id]"
+            class="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">
+      Ouvrir
+    </button>
+    <button *ngIf="item.statutUx === 'Obsolète'"
+            (click)="regenererUiSpec(item)"
+            class="flex items-center gap-1 text-xs text-orange-600 border border-orange-200 rounded-lg px-3 py-1.5 hover:bg-orange-50">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+      </svg>
+      Régénérer
+    </button>
+
+    <!-- Non généré → Générer UI Spec -->
+    <button *ngIf="!item.statutUx || item.statutUx === 'Non généré'"
+            (click)="genererUiSpec(item)"
+            class="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+      </svg>
+      Générer UI Spec
+    </button>
+
+  </div>
+</td>
+              
+
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Bloc info relation 1:1 -->
+  <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-blue-500">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+      </svg>
+      <p class="text-sm font-semibold text-blue-800">Relation 1:1 entre AFD et UI Specification</p>
+    </div>
+    <ul class="text-xs text-blue-700 space-y-1 list-disc list-inside">
+      <li>Chaque AFD ne peut avoir qu'une seule UI Specification</li>
+      <li>Si l'AFD est mise à jour, la UI Spec devient obsolète (Outdated)</li>
+      <li>Les UI Spec validées sont en lecture seule</li>
+      <li>Utilisez "Générer UI Spec" pour créer une spécification UX basée sur l'AFD</li>
+      <li>Chaque UI Spec inclut : Functional Summary, User Flow, Screen Definitions, Component Mapping, Interaction Rules, Accessibility, Responsive Behavior et Figma Prompt</li>
+    </ul>
+  </div>
+
+</div>
+
+  <!-- ========== FIGMA PROMPT ========== -->
+  <div *ngIf="activeTab === 'figma-prompt'">
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="mb-4">
+      <h2 class="text-base font-semibold">Générateur de Prompt Figma</h2>
+      <p class="text-sm text-gray-500 mt-1">Prompt auto-généré basé sur vos règles de design</p>
+    </div>
+
+    <label class="block text-sm font-medium text-gray-700 mb-2">Prompt Figma</label>
+    <textarea rows="8"
+              class="w-full border border-gray-300 rounded-lg p-4 text-sm font-mono text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              [value]="getFigmaPrompt()" readonly>
+    </textarea>
+
+    <div class="flex gap-3 mt-4">
+      <button (click)="copyPrompt()"
+              class="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-700">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+        Copier le prompt
+      </button>
+      <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+        ↺ Régénérer
+      </button>
+    </div>
+
+    <div class="mt-6">
+      <p class="text-sm font-medium text-gray-700 mb-3">Ajustements rapides</p>
+      <div class="flex gap-3">
+        <button (click)="applyAdjustment('minimal')"
+                class="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+</svg>
+ Make more minimal
+        </button>
+        <button (click)="applyAdjustment('enterprise')"
+                class="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+</svg>
+ Make more enterprise
+        </button>
+        <button (click)="applyAdjustment('modern')"
+                class="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+</svg>
+ Make more modern
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <p class="text-sm font-medium text-gray-700 mb-2">Instruction AI personnalisée</p>
+      <div class="flex gap-3">
+        <input type="text" [(ngModel)]="customInstruction"
+               placeholder="Ex: Add dark mode support, optimize for mobile..."
+               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <button (click)="applyCustomInstruction()"
+                class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+</svg>
+ Appliquer
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-blue-500">✓</span>
+        <p class="text-sm font-semibold text-blue-800">Comment utiliser ce prompt dans Figma</p>
+      </div>
+      <ol class="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+        <li>Copiez le prompt ci-dessus</li>
+        <li>Ouvrez Figma et créez un nouveau fichier</li>
+        <li>Utilisez un plugin AI comme "Magician" ou "Builder.io"</li>
+        <li>Collez le prompt et générez votre design</li>
+        <li>Affinez et ajustez selon vos besoins</li>
+      </ol>
+    </div>
+
+  </div>
+
+</div>
+
+</div>

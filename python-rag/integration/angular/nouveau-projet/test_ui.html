@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MOMsoft — Nouveau projet – Génération des besoins</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Inter, sans-serif; background: #f3f4f6; color: #1f2937; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 26px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+    .page-header .subtitle { color: #6b7280; font-size: 15px; margin-bottom: 16px; }
+    .mode-badge { display: inline-flex; align-items: center; gap: 8px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 16px; font-size: 14px; color: #1e40af; }
+    .form-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .form-section h2 { font-size: 18px; font-weight: 600; color: #1a1a2e; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    .section-number { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #4f46e5; color: #fff; font-size: 14px; font-weight: 600; }
+    .section-desc { color: #6b7280; font-size: 14px; margin: -8px 0 16px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 14px; font-weight: 500; color: #374151; }
+    .required { color: #ef4444; }
+    input, select, textarea { padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #1f2937; outline: none; transition: border-color 0.2s; }
+    input:focus, select:focus, textarea:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+    textarea { resize: vertical; min-height: 60px; }
+    .hint { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+    .upload-label { font-size: 14px; font-weight: 500; color: #374151; display: block; margin-bottom: 8px; }
+    .drop-zone { border: 2px dashed #d1d5db; border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: #4f46e5; background: #f5f3ff; }
+    .drop-zone.has-file { border-color: #10b981; background: #ecfdf5; padding: 20px; }
+    .drop-icon { font-size: 40px; margin-bottom: 8px; }
+    .drop-text { font-size: 15px; color: #374151; }
+    .drop-text .link { color: #4f46e5; font-weight: 500; text-decoration: underline; }
+    .drop-hint { font-size: 13px; color: #9ca3af; margin-top: 4px; }
+    .file-info { display: flex; align-items: center; gap: 10px; justify-content: center; }
+    .file-name { font-weight: 500; color: #1f2937; }
+    .file-size { color: #6b7280; font-size: 13px; }
+    .btn-remove { background: none; border: none; color: #ef4444; font-size: 16px; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+    .btn-remove:hover { background: #fef2f2; }
+    .btn-generate { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; padding: 12px 28px; background: #4f46e5; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .btn-generate:hover:not(:disabled) { background: #4338ca; }
+    .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box { margin-top: 16px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #b91c1c; font-size: 14px; }
+    .success-box { margin-top: 16px; padding: 12px 16px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; color: #065f46; font-size: 14px; }
+    .health-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding: 10px 16px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; }
+    .health-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .health-dot.ok { background: #10b981; }
+    .health-dot.ko { background: #ef4444; }
+    .results-section { border-color: #c7d2fe; }
+    .resume-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 18px; margin-bottom: 16px; font-size: 14px; color: #1e3a5f; line-height: 1.5; }
+    .exigence-count { font-size: 14px; color: #6b7280; margin-bottom: 12px; }
+    .meta-info { font-size: 12px; color: #9ca3af; margin-bottom: 16px; }
+    .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .exigences-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .exigences-table th { background: #f9fafb; padding: 10px 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; white-space: nowrap; }
+    .exigences-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; color: #1f2937; vertical-align: top; }
+    .cell-id { font-weight: 600; color: #4f46e5; white-space: nowrap; }
+    .cell-desc { max-width: 250px; }
+    .exigences-table tbody tr:hover { background: #f9fafb; }
+    .type-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+    .badge-func { background: #dbeafe; color: #1e40af; }
+    .badge-nonfunc { background: #fef3c7; color: #92400e; }
+    .badge-secu { background: #fce7f3; color: #9d174d; }
+    .badge-perf { background: #d1fae5; color: #065f46; }
+    .btn-delete { background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; }
+    .btn-delete:hover { background: #fef2f2; }
+    .btn-add-manual { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; padding: 10px 20px; background: #fff; color: #4f46e5; border: 2px solid #4f46e5; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; }
+    .btn-add-manual:hover { background: #f5f3ff; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: #fff; border-radius: 16px; padding: 28px; width: 600px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+    .modal-content h3 { font-size: 20px; font-weight: 600; margin-bottom: 20px; }
+    .modal-form { display: flex; flex-direction: column; gap: 16px; }
+    .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+    .btn-cancel { padding: 10px 20px; background: #f3f4f6; color: #374151; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+    .btn-cancel:hover { background: #e5e7eb; }
+    .btn-confirm { padding: 10px 20px; background: #4f46e5; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
+    .btn-confirm:hover:not(:disabled) { background: #4338ca; }
+    .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+    .raw-text-box { background: #1e1e2e; color: #a6e3a1; padding: 16px; border-radius: 8px; font-family: 'Cascadia Code', monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; margin-top: 12px; }
+    @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
+    .btn-evaluate { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; padding: 12px 28px; background: #7c3aed; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .btn-evaluate:hover:not(:disabled) { background: #6d28d9; }
+    .btn-evaluate:disabled { opacity: 0.5; cursor: not-allowed; }
+    .eval-section { border-color: #ddd6fe; }
+    .score-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .score-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; text-align: center; }
+    .score-card.overall { background: #f5f3ff; border-color: #c4b5fd; }
+    .score-val { font-size: 32px; font-weight: 700; }
+    .score-lbl { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    .score-high { color: #059669; } .score-mid { color: #2563eb; } .score-low { color: #d97706; } .score-bad { color: #dc2626; }
+    .eval-list { list-style: none; padding: 0; margin: 8px 0 16px; display: flex; flex-direction: column; gap: 6px; }
+    .eval-list li { font-size: 14px; padding: 8px 12px; border-radius: 6px; }
+    .eval-list.strengths li { background: #ecfdf5; color: #065f46; }
+    .eval-list.strengths li::before { content: "✓ "; font-weight: 700; }
+    .eval-list.issues li { background: #fef2f2; color: #991b1b; }
+    .eval-list.issues li::before { content: "✗ "; font-weight: 700; }
+    .reco-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 14px; color: #1e3a5f; line-height: 1.6; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="health-bar" id="healthBar">
+    <span class="health-dot ko" id="healthDot"></span>
+    <span id="healthText">Vérification du backend...</span>
+  </div>
+  <div class="page-header">
+    <h1>Nouveau projet – Génération des besoins</h1>
+    <p class="subtitle">Créez un nouveau projet et générez automatiquement les besoins via l'IA</p>
+    <div class="mode-badge"><span>🤖</span><span>Mode IA — L'IA générera automatiquement les exigences à partir de vos documents</span></div>
+  </div>
+
+  <section class="form-section">
+    <h2><span class="section-number">1</span> Informations projet</h2>
+    <div class="form-grid">
+      <div class="form-group"><label>Nom du projet <span class="required">*</span></label><input id="projectName" type="text" placeholder="Ex: Module CRM - Gestion Clients" /></div>
+      <div class="form-group"><label>Identifiant projet <span class="required">*</span></label><input id="projectId" type="text" placeholder="Ex: PRJ-2024-001" /></div>
+      <div class="form-group"><label>Client <span class="required">*</span></label><input id="clientName" type="text" placeholder="Nom du client" /></div>
+      <div class="form-group"><label>Langue de génération</label><select id="language"><option value="Français" selected>Français</option><option value="English">English</option><option value="العربية">العربية</option></select><small class="hint">Langue utilisée pour la génération des exigences.</small></div>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2><span class="section-number">2</span> Contexte produit</h2>
+    <p class="section-desc">Le produit sélectionné permet à l'IA de comprendre le contexte métier.</p>
+    <div class="form-group"><label>Produit <span class="required">*</span></label>
+      <select id="productName"><option value="Smart Factory MOMsoft" selected>Smart Factory MOMsoft</option><option value="MOMsoft MES">MOMsoft MES</option><option value="MOMsoft WMS">MOMsoft WMS</option><option value="MOMsoft QMS">MOMsoft QMS</option><option value="MOMsoft Planning">MOMsoft Planning</option><option value="Autre">Autre</option></select>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2><span class="section-number">3</span> Documents</h2>
+    <label class="upload-label">Cahier des charges client (CdC)</label>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept=".pdf,.docx,.txt" hidden />
+      <div id="dropContent"><div class="drop-icon">📄</div><p class="drop-text">Glissez-déposez ou <span class="link">cliquez pour sélectionner</span></p><p class="drop-hint">PDF, DOCX, TXT (max 10 Mo)</p></div>
+    </div>
+    <button class="btn-generate" id="btnGenerate" disabled onclick="generate()">🚀 Générer les exigences via l'IA</button>
+    <div id="statusArea"></div>
+  </section>
+
+  <section class="form-section results-section" id="resultsSection" style="display:none">
+    <h2><span class="section-number">4</span> Exigences générées</h2>
+    <div id="resumeBox" class="resume-box" style="display:none"></div>
+    <div id="metaInfo" class="meta-info"></div>
+    <p class="exigence-count" id="exigenceCount"></p>
+    <div class="table-wrapper" id="tableWrapper"></div>
+    <button class="btn-add-manual" onclick="openManualForm()">➕ Ajouter une exigence manuellement</button>
+    <div id="rawTextArea" style="display:none"><h3 style="margin-top:20px;font-size:15px;color:#6b7280;">Réponse brute du LLM :</h3><div class="raw-text-box" id="rawTextContent"></div></div>
+    <button class="btn-evaluate" id="btnEvaluate" onclick="showEvalSection()" style="display:none">🧑‍⚖️ Évaluer avec le Juge IA</button>
+  </section>
+
+  <section class="form-section eval-section" id="evalSection" style="display:none">
+    <h2><span class="section-number" style="background:#7c3aed">5</span> Évaluation LLM-as-a-Judge <span style="font-size:13px;color:#6b7280;font-weight:400;">— Groq llama-4-scout-17b</span></h2>
+    <p class="section-desc">Le juge IA analyse la qualité des exigences générées par rapport à votre CdC.</p>
+    <div class="form-grid" style="margin-bottom:16px;">
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Texte du Cahier des Charges <span style="color:#10b981;font-weight:500;">✓ extrait automatiquement</span></label>
+        <textarea id="evalCdc" rows="5" placeholder="Extraction automatique depuis le fichier uploadé..." readonly style="background:#f9fafb;font-size:12px;"></textarea>
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Extraits Guide Smart Factory <span style="color:#9ca3af;font-weight:400;">(optionnel)</span></label>
+        <textarea id="evalGuide" rows="3" placeholder="Collez quelques paragraphes du Guide Smart Factory MOMsoft..."></textarea>
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Exigences à évaluer <span style="color:#10b981;font-weight:500;">✓ pré-remplies automatiquement</span></label>
+        <textarea id="evalRequirements" rows="5" readonly style="background:#f9fafb;font-size:12px;"></textarea>
+      </div>
+    </div>
+    <button class="btn-evaluate" id="btnRunEval" onclick="runEvaluation()">Lancer l'évaluation</button>
+    <div id="evalStatusArea"></div>
+
+    <div id="evalResults" style="display:none;margin-top:24px;">
+      <div class="score-grid" id="scoreGrid"></div>
+      <div id="strengthsBlock" style="display:none"><p style="font-weight:600;color:#065f46;margin-bottom:6px;">Points forts</p><ul class="eval-list strengths" id="strengthsList"></ul></div>
+      <div id="issuesBlock" style="display:none"><p style="font-weight:600;color:#991b1b;margin-bottom:6px;">Problèmes détectés</p><ul class="eval-list issues" id="issuesList"></ul></div>
+      <div id="recoBlock" style="display:none"><p style="font-weight:600;margin-bottom:6px;">Recommandation</p><div class="reco-box" id="recoText"></div></div>
+    </div>
+  </section>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModal()">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <h3>Ajouter une exigence manuelle</h3>
+    <div class="modal-form">
+      <div class="form-group"><label>Type <span class="required">*</span></label><select id="manualType"><option value="Fonctionnelle">Fonctionnelle</option><option value="Non-fonctionnelle">Non-fonctionnelle</option><option value="Sécurité">Sécurité</option><option value="Performance">Performance</option></select></div>
+      <div class="form-group"><label>Intitulé <span class="required">*</span></label><input id="manualIntitule" type="text" placeholder="Ex: Authentification utilisateur" /></div>
+      <div class="form-group"><label>Objectif client <span class="required">*</span></label><input id="manualObjectif" type="text" placeholder="Ex: Permettre l'accès sécurisé" /></div>
+      <div class="form-group"><label>Description <span class="required">*</span></label><textarea id="manualDesc" rows="3" placeholder="Le système doit..."></textarea></div>
+      <div class="form-group"><label>Solution proposée</label><textarea id="manualSolution" rows="2" placeholder="Module MOMsoft..."></textarea></div>
+      <div class="form-group"><label>Limites et hypothèses</label><textarea id="manualLimites" rows="2" placeholder="Contraintes..."></textarea></div>
+    </div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn-confirm" onclick="addManualExigence()">Ajouter</button></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "http://localhost:8000";
+let selectedFile = null, exigences = [], extractedCdcText = "";
+
+async function checkHealth() {
+  const dot = document.getElementById("healthDot"), text = document.getElementById("healthText");
+  try {
+    const r = await fetch(API_BASE + "/health"); const d = await r.json();
+    dot.className = "health-dot ok";
+    text.textContent = "✅ Backend connecté — " + d.chromadb_docs + " chunks ChromaDB | LLM: " + d.llm_provider;
+  } catch(e) { dot.className = "health-dot ko"; text.textContent = "❌ Backend non disponible — lancez: uvicorn src.api.main:app --port 8000"; }
+}
+checkHealth();
+
+const dropZone = document.getElementById("dropZone"), fileInput = document.getElementById("fileInput");
+dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+dropZone.addEventListener("drop", e => { e.preventDefault(); dropZone.classList.remove("drag-over"); if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener("change", e => { if(e.target.files.length) handleFile(e.target.files[0]); });
+
+function handleFile(file) {
+  const ext = "." + file.name.split(".").pop().toLowerCase();
+  if(![".pdf",".docx",".txt"].includes(ext)) { showStatus("Format non supporté. Acceptés: PDF, DOCX, TXT","error"); return; }
+  if(file.size > 10*1024*1024) { showStatus("Fichier trop volumineux (max 10 Mo)","error"); return; }
+  selectedFile = file; dropZone.classList.add("has-file");
+  document.getElementById("dropContent").innerHTML = '<div class="file-info"><span style="font-size:20px">📎</span><span class="file-name">'+file.name+'</span><span class="file-size">('+formatSize(file.size)+')</span><button class="btn-remove" onclick="removeFile(event)">✕</button></div>';
+  updateBtn();
+}
+function removeFile(e) { if(e) e.stopPropagation(); selectedFile = null; dropZone.classList.remove("has-file"); document.getElementById("dropContent").innerHTML = '<div class="drop-icon">📄</div><p class="drop-text">Glissez-déposez ou <span class="link">cliquez pour sélectionner</span></p><p class="drop-hint">PDF, DOCX, TXT (max 10 Mo)</p>'; fileInput.value = ""; updateBtn(); }
+function formatSize(b) { if(b<1024) return b+" o"; if(b<1024*1024) return (b/1024).toFixed(1)+" Ko"; return (b/(1024*1024)).toFixed(1)+" Mo"; }
+function updateBtn() { document.getElementById("btnGenerate").disabled = !(selectedFile && document.getElementById("projectName").value.trim() && document.getElementById("projectId").value.trim() && document.getElementById("clientName").value.trim()); }
+document.querySelectorAll("#projectName,#projectId,#clientName").forEach(el => el.addEventListener("input", updateBtn));
+
+async function generate() {
+  if(!selectedFile) return;
+  const btn = document.getElementById("btnGenerate"); btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Génération en cours... (~40s)';
+  showStatus("⏳ Upload du fichier et génération IA en cours...","success");
+  const form = new FormData();
+  form.append("file", selectedFile);
+  form.append("project_name", document.getElementById("projectName").value);
+  form.append("project_id", document.getElementById("projectId").value);
+  form.append("client_name", document.getElementById("clientName").value);
+  form.append("product_name", document.getElementById("productName").value);
+  form.append("language", document.getElementById("language").value);
+  form.append("top_k", "8");
+  try {
+    const r = await fetch(API_BASE + "/project/generate", { method: "POST", body: form });
+    const data = await r.json();
+    btn.innerHTML = "🚀 Générer les exigences via l'IA"; btn.disabled = false;
+    if(!r.ok) { showStatus("❌ Erreur: " + (data.detail || JSON.stringify(data)),"error"); return; }
+    if(data.success && data.exigences) {
+      exigences = data.exigences.exigences || [];
+      extractedCdcText = data.extracted_text || "";
+      showStatus("✅ " + exigences.length + " exigences générées en " + (data.pipeline_metadata?.elapsed_seconds||"?") + "s | Texte: " + data.extracted_text_length + " chars","success");
+      renderResults(data);
+    } else { showStatus("⚠️ JSON non parsé — voir réponse brute ci-dessous","error"); renderRawFallback(data); }
+  } catch(e) { showStatus("❌ Erreur réseau: " + e.message,"error"); btn.innerHTML = "🚀 Générer les exigences via l'IA"; btn.disabled = false; }
+}
+
+function renderResults(data) {
+  document.getElementById("resultsSection").style.display = "block";
+  document.getElementById("btnEvaluate").style.display = "inline-flex";
+  const resume = data.exigences?.resume || "";
+  const rb = document.getElementById("resumeBox");
+  if(resume) { rb.style.display = "block"; rb.innerHTML = "<strong>Résumé :</strong> " + resume; } else rb.style.display = "none";
+  const m = data.pipeline_metadata || {};
+  document.getElementById("metaInfo").textContent = "Provider: "+data.provider+" | Durée: "+(m.elapsed_seconds||"?")+"s | CdC: "+(m.cdc_text_chars||"?")+" chars";
+  document.getElementById("rawTextArea").style.display = "none";
+  renderTable();
+}
+function renderRawFallback(data) {
+  document.getElementById("resultsSection").style.display = "block";
+  document.getElementById("resumeBox").style.display = "none";
+  document.getElementById("tableWrapper").innerHTML = "";
+  document.getElementById("exigenceCount").textContent = "";
+  document.getElementById("rawTextArea").style.display = "block";
+  document.getElementById("rawTextContent").textContent = data.raw_text || "(vide)";
+}
+function renderTable() {
+  document.getElementById("exigenceCount").textContent = exigences.length + " exigence(s)";
+  if(!exigences.length) { document.getElementById("tableWrapper").innerHTML = ""; return; }
+  let h = '<table class="exigences-table"><thead><tr><th>ID</th><th>Type</th><th>Intitulé</th><th>Objectif</th><th>Description</th><th>Solution</th><th>Limites</th><th></th></tr></thead><tbody>';
+  exigences.forEach((ex,i) => {
+    const b = ex.type?.toLowerCase().includes("non") ? "badge-nonfunc" : ex.type?.toLowerCase().includes("sécu")||ex.type?.toLowerCase().includes("secu") ? "badge-secu" : ex.type?.toLowerCase().includes("perf") ? "badge-perf" : "badge-func";
+    h += '<tr><td class="cell-id">'+esc(ex.id)+'</td><td><span class="type-badge '+b+'">'+esc(ex.type)+'</span></td><td>'+esc(ex.intitule)+'</td><td>'+esc(ex.objectifClient)+'</td><td class="cell-desc">'+esc(ex.description)+'</td><td>'+esc(ex.solutionProposee||"")+'</td><td>'+esc(ex.limitesHypotheses||"")+'</td><td><button class="btn-delete" onclick="removeExigence('+i+')">🗑️</button></td></tr>';
+  });
+  document.getElementById("tableWrapper").innerHTML = h + "</tbody></table>";
+}
+function removeExigence(i) { exigences.splice(i,1); renderTable(); }
+function openManualForm() { document.getElementById("modalOverlay").style.display = "flex"; }
+function closeModal() { document.getElementById("modalOverlay").style.display = "none"; }
+function addManualExigence() {
+  const int = document.getElementById("manualIntitule").value.trim(), obj = document.getElementById("manualObjectif").value.trim(), desc = document.getElementById("manualDesc").value.trim();
+  if(!int||!obj||!desc) { alert("Remplissez les champs obligatoires"); return; }
+  exigences.push({ id: "EX-"+String(exigences.length+1).padStart(3,"0"), type: document.getElementById("manualType").value, intitule: int, objectifClient: obj, description: desc, solutionProposee: document.getElementById("manualSolution").value.trim(), limitesHypotheses: document.getElementById("manualLimites").value.trim() });
+  renderTable(); closeModal();
+  ["manualIntitule","manualObjectif","manualDesc","manualSolution","manualLimites"].forEach(id => document.getElementById(id).value = "");
+}
+function showStatus(msg, type) { document.getElementById("statusArea").innerHTML = '<div class="'+(type==="error"?"error-box":"success-box")+'">'+msg+'</div>'; }
+function esc(s) { const d = document.createElement("div"); d.textContent = s||""; return d.innerHTML; }
+
+function showEvalSection() {
+  document.getElementById("evalSection").style.display = "block";
+  document.getElementById("evalRequirements").value = JSON.stringify({ exigences: exigences }, null, 2);
+  document.getElementById("evalCdc").value = extractedCdcText;
+  document.getElementById("evalResults").style.display = "none";
+  document.getElementById("evalStatusArea").innerHTML = "";
+  document.getElementById("evalSection").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function runEvaluation() {
+  const cdc = document.getElementById("evalCdc").value.trim();
+  if (!cdc) { document.getElementById("evalStatusArea").innerHTML = '<div class="error-box">Veuillez coller le texte du CdC avant de lancer l\'évaluation.</div>'; return; }
+  const guide = document.getElementById("evalGuide").value.trim();
+  const requirements = document.getElementById("evalRequirements").value.trim();
+  const btn = document.getElementById("btnRunEval");
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Analyse en cours... (~20s)';
+  document.getElementById("evalStatusArea").innerHTML = '<div class="success-box">⏳ Le juge IA analyse les exigences...</div>';
+  document.getElementById("evalResults").style.display = "none";
+  try {
+    const r = await fetch(API_BASE + "/evaluate/exigences", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cdc_text: cdc, guide_chunks: guide, requirements: requirements }) });
+    const data = await r.json();
+    btn.disabled = false; btn.innerHTML = "Lancer l'évaluation";
+    if (!r.ok || !data.success) { document.getElementById("evalStatusArea").innerHTML = '<div class="error-box">❌ ' + (data.error || data.detail || "Évaluation échouée") + '</div>'; return; }
+    document.getElementById("evalStatusArea").innerHTML = '<div class="success-box">✅ Évaluation terminée</div>';
+    renderEvalResults(data.scores);
+  } catch(e) { btn.disabled = false; btn.innerHTML = "Lancer l'évaluation"; document.getElementById("evalStatusArea").innerHTML = '<div class="error-box">❌ Erreur réseau: ' + e.message + '</div>'; }
+}
+
+function scoreClass(v) { return v >= 8 ? "score-high" : v >= 6 ? "score-mid" : v >= 4 ? "score-low" : "score-bad"; }
+
+function renderEvalResults(s) {
+  const labels = { faithfulness: "Fidélité CdC", answer_relevance: "Pertinence", context_precision: "Précision Guide", solution_relevance: "Solution MOMsoft", completeness: "Complétude", overall_score: "Score global" };
+  let grid = "";
+  Object.entries(labels).forEach(([k, lbl]) => {
+    if (s[k] !== undefined) {
+      const isOverall = k === "overall_score";
+      grid += '<div class="score-card'+(isOverall?" overall":"")+'"><div class="score-val '+scoreClass(s[k])+'" style="'+(isOverall?"font-size:40px":"")+'">'+s[k]+'</div><div class="score-lbl">'+lbl+'</div></div>';
+    }
+  });
+  document.getElementById("scoreGrid").innerHTML = grid;
+  if (s.strengths?.length) { document.getElementById("strengthsBlock").style.display="block"; document.getElementById("strengthsList").innerHTML = s.strengths.map(t=>'<li>'+esc(t)+'</li>').join(""); }
+  if (s.issues?.length) { document.getElementById("issuesBlock").style.display="block"; document.getElementById("issuesList").innerHTML = s.issues.map(t=>'<li>'+esc(t)+'</li>').join(""); }
+  if (s.recommendation) { document.getElementById("recoBlock").style.display="block"; document.getElementById("recoText").textContent = s.recommendation; }
+  document.getElementById("evalResults").style.display = "block";
+  document.getElementById("evalResults").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+</script>
+</body>
+</html>

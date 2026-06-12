@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 8.1.0.final using JasperReports Library version 6.20.0-2bc7ab61c56f459e8176eb05c7705e145cd400ad  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="lastParcel" pageWidth="425" pageHeight="141" columnWidth="409" leftMargin="8" rightMargin="8" topMargin="8" bottomMargin="8" uuid="33a51cd5-f699-46e9-bfdc-52b285d6bd1f">
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="COLISData Adapter "/>
+	<style name="Barcode" forecolor="#000000" fontName="Arial" fontSize="8"/>
+	<field name="code" class="java.lang.String"/>
+	<field name="currentQuantity" class="java.lang.Integer"/>
+	<field name="indexNbr" class="java.lang.Integer"/>
+	<field name="isCurrent" class="java.lang.Boolean"/>
+	<field name="endLine.ofId" class="java.lang.String"/>
+	<field name="endLine.prodId" class="java.lang.String"/>
+	<field name="poids" class="java.lang.String"/>
+	<field name="codeOperateur" class="java.lang.String"/>
+	<field name="indice" class="java.lang.String"/>
+	<background>
+		<band height="10" splitType="Stretch"/>
+	</background>
+	<detail>
+		<band height="125" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="-7" width="41" height="20" uuid="91698cbf-59ce-4992-a133-872635f1afd7"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DEPOT :]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="41" y="-5" width="40" height="16" uuid="64247027-d447-4297-b808-2cbfe0bfdf86"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle" rotation="None">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[301]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="11" width="40" height="15" uuid="1a591d46-693d-42db-84eb-e422a91a05fb"/>
+				<textElement rotation="None">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Indice :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="27" width="30" height="20" uuid="66899f53-64f8-4f4f-899c-26cd62273e12"/>
+				<textElement rotation="None">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Date :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="43" width="80" height="15" uuid="1a591d46-693d-42db-84eb-e422a91a05fb"/>
+				<textElement rotation="None">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Matricule :]]></text>
+			</staticText>
+			<textField pattern="dd/MM/ yyyy">
+				<reportElement x="33" y="26" width="76" height="19" uuid="d36d5b3f-7eb1-4080-82f9-ea59ab1d6f42"/>
+				<textElement rotation="None"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="60" width="412" height="1" uuid="38e1092a-9e29-4baf-97e2-11f674c7a513"/>
+			</line>
+			<staticText>
+				<reportElement x="38" y="60" width="45" height="26" uuid="36fee65d-889e-4041-ad46-a3cbb5b88e3c"/>
+				<textElement rotation="None">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Art]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="153" y="60" width="45" height="26" uuid="0c2b706f-512b-45b6-a050-775f98350984"/>
+				<textElement rotation="None">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[OF]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="245" y="60" width="45" height="26" uuid="29e7bcb1-8562-47c7-ab16-2ec09ddf6ff0"/>
+				<textElement rotation="None">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Qté]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="341" y="60" width="56" height="20" uuid="83299519-d366-4f00-952f-1eed56a650f9"/>
+				<textElement rotation="None">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Poids]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="42" y="12" width="30" height="14" uuid="ae890576-5890-446c-8d45-b86b4bf1a617"/>
+				<textFieldExpression><![CDATA[$F{indice}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="50" y="43" width="80" height="14" uuid="ae890576-5890-446c-8d45-b86b4bf1a617"/>
+				<textFieldExpression><![CDATA[$F{codeOperateur}+" X"]]></textFieldExpression>
+			</textField>
+			<componentElement>
+				<reportElement style="Barcode" x="1" y="90" width="108" height="20" uuid="c019029d-6d21-4cf9-b9f1-0aae9b7db086">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.barHeight" value="px"/>
+					<property name="com.jaspersoft.studio.unit.barWidth" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code128" drawText="true" checksumRequired="false" barHeight="30">
+					<jr:codeExpression><![CDATA[$F{endLine.prodId}]]></jr:codeExpression>
+					<jr:applicationIdentifierExpression><![CDATA["01"]]></jr:applicationIdentifierExpression>
+				</jr:barbecue>
+			</componentElement>
+			<componentElement>
+				<reportElement x="121" y="90" width="90" height="20" uuid="d75a52bc-d2a1-40f0-a52d-376ea4094db1">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.barHeight" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code128" drawText="true" checksumRequired="false">
+					<jr:codeExpression><![CDATA[$F{endLine.ofId}]]></jr:codeExpression>
+				</jr:barbecue>
+			</componentElement>
+			<componentElement>
+				<reportElement style="Barcode" x="220" y="90" width="90" height="20" uuid="6a1cd43a-88fb-438f-9f27-236f5652f976">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.barHeight" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code128" drawText="true" checksumRequired="false">
+					<jr:codeExpression><![CDATA[$F{currentQuantity}]]></jr:codeExpression>
+				</jr:barbecue>
+			</componentElement>
+			<componentElement>
+				<reportElement style="Barcode" x="140" y="1" width="250" height="25" isPrintInFirstWholeBand="true" uuid="affdd746-2b2d-4c1c-a281-6f65380d691f"/>
+				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code128" drawText="true" checksumRequired="false">
+					<jr:codeExpression><![CDATA[$F{code}]]></jr:codeExpression>
+					<jr:applicationIdentifierExpression><![CDATA["01"]]></jr:applicationIdentifierExpression>
+				</jr:barbecue>
+			</componentElement>
+			<textField>
+				<reportElement x="140" y="34" width="250" height="18" uuid="c749e871-1058-4039-a23f-20b86f59b14d">
+					<property name="com.jaspersoft.studio.element.name" value="Code"/>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{code}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1" y="110" width="108" height="15" uuid="39c68693-cb70-4404-9ab5-b0fb819c75c5">
+					<property name="com.jaspersoft.studio.element.name" value="Article"/>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{endLine.prodId}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="121" y="110" width="90" height="15" uuid="d5c4b685-c1c9-4797-9e5d-942b8803074d">
+					<property name="com.jaspersoft.studio.element.name" value="OF"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{endLine.ofId}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="220" y="110" width="90" height="15" uuid="4e7a55d6-a289-48a7-a8e9-7a3b6cafe62d">
+					<property name="com.jaspersoft.studio.element.name" value="Qte"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{currentQuantity}]]></textFieldExpression>
+			</textField>
+			<componentElement>
+				<reportElement style="Barcode" x="319" y="90" width="90" height="20" uuid="3cc29ce4-7f21-4eb6-b170-e62bbb590b89">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.barHeight" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code128" drawText="true" checksumRequired="false">
+					<jr:codeExpression><![CDATA[$F{poids}]]></jr:codeExpression>
+				</jr:barbecue>
+			</componentElement>
+			<staticText>
+				<reportElement x="387" y="109" width="18" height="15" uuid="5a5d4109-e795-4786-9e7f-9ba9e5e92383"/>
+				<textElement textAlignment="Center" rotation="None">
+					<font size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[KG]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="319" y="110" width="64" height="15" uuid="a96b5efe-8a34-408e-aa45-1a3c6f23d40a">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{poids}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

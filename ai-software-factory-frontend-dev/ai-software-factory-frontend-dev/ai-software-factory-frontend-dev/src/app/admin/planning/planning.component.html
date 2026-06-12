@@ -1,0 +1,234 @@
+
+
+      <!-- Breadcrumb -->
+      <div class="mb-4">
+        <nav class="flex text-sm text-gray-500">
+          <a routerLink="/admin/dashboard" class="hover:text-gray-700">Tableau de bord</a>
+          <span class="mx-2">&gt;</span>
+          <span class="text-gray-900">Gestion projet</span>
+        </nav>
+      </div>
+
+      <!-- Title + Button -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Planning</h1>
+          <p class="text-sm text-gray-600 mt-1">Gérez les plannings de vos projets</p>
+        </div>
+
+        <button
+  routerLink="/admin/planning/new"
+  class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+>
+  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      d="M12 4v16m8-8H4" />
+  </svg>
+  Nouveau Planning
+</button>
+
+      </div>
+
+      <!-- FILTER BLOCK -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex flex-col md:flex-row gap-4 items-center">
+
+          <!-- Search -->
+          <div class="flex-1 w-full">
+            <input
+              type="text"
+              placeholder="Rechercher un planning..."
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+
+          <!-- Dropdown Filters -->
+          <div class="flex gap-3 relative">
+
+            <!-- PROJECT -->
+            <div class="relative">
+              <button
+                (click)="toggleDropdown('project')"
+                class="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl text-sm font-medium hover:bg-gray-200 transition"
+              >
+                {{ selectedProject }}
+                <span class="ml-2 text-gray-400">▼</span>
+              </button>
+
+              <div *ngIf="openDropdown === 'project'"
+                   class="absolute mt-2 w-60 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+
+                <div *ngFor="let p of projects"
+                     (click)="selectProject(p)"
+                     class="flex justify-between items-center px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 rounded-lg">
+                  {{ p }}
+                  <span *ngIf="p === selectedProject">✔</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- STATUS -->
+            <div class="relative">
+              <button
+                (click)="toggleDropdown('status')"
+                class="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl text-sm font-medium hover:bg-gray-200 transition"
+              >
+                {{ selectedStatus }}
+                <span class="ml-2 text-gray-400">▼</span>
+              </button>
+
+              <div *ngIf="openDropdown === 'status'"
+                   class="absolute mt-2 w-60 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+
+                <div *ngFor="let s of statuses"
+                     (click)="selectStatus(s)"
+                     class="flex justify-between items-center px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 rounded-lg">
+                  {{ s }}
+                  <span *ngIf="s === selectedStatus">✔</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PHASE -->
+            <div class="relative">
+              <button
+                (click)="toggleDropdown('phase')"
+                class="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl text-sm font-medium hover:bg-gray-200 transition"
+              >
+                {{ selectedPhase }}
+                <span class="ml-2 text-gray-400">▼</span>
+              </button>
+
+              <div *ngIf="openDropdown === 'phase'"
+                   class="absolute mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+
+                <div *ngFor="let ph of phases"
+                     (click)="selectPhase(ph)"
+                     class="flex justify-between items-center px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 rounded-lg">
+                  {{ ph }}
+                  <span *ngIf="ph === selectedPhase">✔</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TABLE BLOCK -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+
+      <!-- HEADER -->
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+            Nom du planning
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+            Projet
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+            Version
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+            Phase actuelle
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+            Progression
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+            Date début
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+            Date fin
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+            Statut
+          </th>
+          <th class="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase">
+            Actions
+          </th>
+        </tr>
+      </thead>
+
+      <!-- BODY -->
+      <tbody class="bg-white divide-y divide-gray-200">
+
+  <!-- Si vide -->
+  <tr *ngIf="filteredPlannings.length === 0">
+    <td colspan="9" class="px-6 py-6 text-center text-gray-500">
+      Aucun planning disponible
+    </td>
+  </tr>
+
+  <!-- Liste des plannings -->
+  <tr *ngFor="let planning of filteredPlannings">
+
+    <td class="px-6 py-4 font-medium text-gray-900">
+      {{ planning.nom }}
+    </td>
+
+    <td class="px-6 py-4 text-gray-700">
+      {{ planning.projet?.nom }}
+    </td>
+
+    <td class="px-6 py-4">
+      {{ planning.version }}
+    </td>
+
+    <td class="px-6 py-4">
+      {{ planning.phaseActuelle }}
+    </td>
+
+    <td class="px-6 py-4">
+      {{ planning.progression }}%
+    </td>
+
+    <td class="px-6 py-4">
+      {{ planning.dateDebut }}
+    </td>
+
+    <td class="px-6 py-4">
+      {{ planning.dateFin }}
+    </td>
+
+    <td class="px-6 py-4">
+      <span class="px-2 py-1 text-xs rounded-full"
+  [ngClass]="{
+    'bg-gray-100 text-gray-600': planning.statusMetier === 'BROUILLON',
+    'bg-blue-100 text-blue-700': planning.statusMetier === 'GENERE',
+    'bg-green-100 text-green-700': planning.statusMetier === 'VALIDE'
+  }">
+
+  {{
+    planning.statusMetier === 'BROUILLON' ? 'Brouillon' :
+    planning.statusMetier === 'GENERE' ? 'Généré' :
+    planning.statusMetier === 'VALIDE' ? 'Validé' :
+    '—'
+  }}
+
+</span>
+    </td>
+
+    <td class="px-6 py-4 text-center">
+     <button
+  [routerLink]="['/admin/planning', planning.id]"
+  class="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+  Ouvrir
+</button>
+    </td>
+
+  </tr>
+
+</tbody>
+
+    </table>
+  </div>
+
+</div>
+
+   

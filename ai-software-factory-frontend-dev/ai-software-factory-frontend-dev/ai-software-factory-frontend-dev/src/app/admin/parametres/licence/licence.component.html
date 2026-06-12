@@ -1,0 +1,283 @@
+<!-- En-tête -->
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-2xl font-bold text-gray-800">Gestion des licences</h2>
+    <p class="text-sm text-gray-500 mt-1">Définissez la tarification de référence par module pour le chiffrage des licences projet</p>
+  </div>
+  <div class="flex gap-3">
+    <!-- Importer -->
+    <button (click)="importerPaliers()"
+      class="flex items-center px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+      </svg>
+      Importer
+    </button>
+    <!-- Exporter -->
+    <button (click)="exporterPaliers()"
+      class="flex items-center px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      Exporter
+    </button>
+    <!-- Nouveau palier -->
+    <button (click)="openAddModal()"
+      class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Nouveau palier
+    </button>
+  </div>
+</div>
+
+<!-- Barre de filtres -->
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-6">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <!-- Filtre produit -->
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Produit</label>
+      <select [(ngModel)]="filterProduitId" (change)="onFilterProduitChange()"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        <option [ngValue]="null">Tous les produits</option>
+        <option *ngFor="let p of produits" [ngValue]="p.id">
+          {{ p.produitCode }} - {{ p.nom }}
+        </option>
+      </select>
+    </div>
+    <!-- Filtre module -->
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Module</label>
+      <select [(ngModel)]="filterModule"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        <option value="Tous les modules">Tous les modules</option>
+        <option *ngFor="let m of modules" [value]="m.nom">{{ m.nom }}</option>
+      </select>
+    </div>
+    <!-- Filtre type -->
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
+      <select [(ngModel)]="filterType"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        <option value="">Tous les types</option>
+        <option value="Oneshot">Oneshot</option>
+        <option value="Yearly">Yearly</option>
+      </select>
+    </div>
+    <!-- Filtre devise -->
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Devise</label>
+      <select [(ngModel)]="filterDevise"
+        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        <option *ngFor="let d of devises" [value]="d">{{ d }}</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Tableau des paliers -->
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Produit</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Module</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Utilisateurs</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Prix unitaire</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+          <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <tr *ngFor="let palier of filteredPaliers" class="hover:bg-gray-50 transition-colors">
+          <!-- Produit -->
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800">
+                {{ palier.produitCode }}
+              </span>
+              <span class="text-sm text-gray-700 font-medium">{{ palier.produitNom }}</span>
+            </div>
+          </td>
+          <!-- Module -->
+          <td class="px-6 py-4">
+            <span class="text-sm text-gray-700">{{ palier.module }}</span>
+          </td>
+          <!-- Type -->
+          <td class="px-6 py-4">
+            <span [class]="palier.type === 'Oneshot'
+              ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800'
+              : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800'">
+              {{ palier.type }}
+            </span>
+          </td>
+          <!-- Utilisateurs -->
+          <td class="px-6 py-4 text-sm text-gray-600">
+            {{ palier.nbUtilisateursMin }}
+            <span *ngIf="palier.nbUtilisateursMax"> — {{ palier.nbUtilisateursMax }}</span>
+            <span *ngIf="!palier.nbUtilisateursMax"> — ∞</span>
+          </td>
+          <!-- Prix -->
+          <td class="px-6 py-4">
+            <span class="text-sm font-semibold text-gray-900">
+              {{ formatPrix(palier.prixUnitaire, palier.devise) }}
+            </span>
+          </td>
+          <!-- Description -->
+          <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+            {{ palier.description || '—' }}
+          </td>
+          <!-- Actions -->
+          <td class="px-6 py-4 text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button (click)="openEditModal(palier)"
+                class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                title="Modifier">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+              <button (click)="deletePalier(palier.id)"
+                class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                title="Supprimer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <!-- État vide -->
+        <tr *ngIf="filteredPaliers.length === 0">
+          <td colspan="7" class="px-6 py-12 text-center">
+            <div class="flex flex-col items-center gap-3 text-gray-400">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+              </svg>
+              <p class="text-sm font-medium">Aucun palier de licence trouvé</p>
+              <p class="text-xs">Ajoutez un palier avec le bouton "Nouveau palier"</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ MODAL ═══════════════════════════════════ -->
+<div *ngIf="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+    <!-- Header modal -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-bold text-gray-900">
+        {{ isEditing ? 'Modifier le palier' : 'Nouveau palier de licence' }}
+      </h3>
+      <button (click)="closeModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Body modal -->
+    <div class="px-6 py-5 space-y-4">
+      <!-- Produit -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Produit <span class="text-red-500">*</span></label>
+        <select [(ngModel)]="currentPalier.produitCode" (change)="onModalProduitChange()"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <option value="">Sélectionner un produit</option>
+          <option *ngFor="let p of produits" [value]="p.produitCode">
+            {{ p.produitCode }} - {{ p.nom }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Module -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Module</label>
+        <select [(ngModel)]="currentPalier.module"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <option value="Tous les modules">Tous les modules</option>
+          <option *ngFor="let m of modules" [value]="m.nom">{{ m.nom }}</option>
+        </select>
+      </div>
+
+      <!-- Type + Devise -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Type <span class="text-red-500">*</span></label>
+          <select [(ngModel)]="currentPalier.type"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="Oneshot">Oneshot</option>
+            <option value="Yearly">Yearly</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Devise</label>
+          <select [(ngModel)]="currentPalier.devise"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option *ngFor="let d of devises" [value]="d">{{ d }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Prix unitaire -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Prix unitaire <span class="text-red-500">*</span></label>
+        <div class="relative">
+          <input type="number" [(ngModel)]="currentPalier.prixUnitaire" min="0" step="100"
+            placeholder="ex: 15000"
+            class="w-full pl-3 pr-16 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">
+            {{ currentPalier.devise }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Plage utilisateurs -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Utilisateurs min</label>
+          <input type="number" [(ngModel)]="currentPalier.nbUtilisateursMin" min="1"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Utilisateurs max <span class="text-gray-400 text-xs">(vide = illimité)</span></label>
+          <input type="number" [(ngModel)]="currentPalier.nbUtilisateursMax" min="1"
+            placeholder="∞"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <textarea [(ngModel)]="currentPalier.description" rows="2" placeholder="Description optionnelle..."
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none">
+        </textarea>
+      </div>
+    </div>
+
+    <!-- Footer modal -->
+    <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200">
+      <button (click)="closeModal()"
+        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+        Annuler
+      </button>
+      <button (click)="savePalier()"
+        [disabled]="!currentPalier.produitCode || !currentPalier.type || !currentPalier.prixUnitaire"
+        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+        {{ isEditing ? 'Enregistrer' : 'Créer le palier' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,605 @@
+
+<div class="min-h-screen bg-gray-50 p-8" *ngIf="planning">
+
+  <!-- ================= BREADCRUMB ================= -->
+
+  <div class="text-sm text-gray-500 mb-6">
+
+    <span routerLink="/admin/dashboard" class="cursor-pointer hover:text-gray-700">
+      Accueil
+    </span>
+
+    <span class="mx-2">›</span>
+
+    <span routerLink="/admin/planning" class="cursor-pointer hover:text-gray-700">
+      Planning
+    </span>
+
+    <span class="mx-2">›</span>
+
+    <span class="text-gray-900 font-medium">
+      {{ planning.nom }}
+    </span>
+
+  </div>
+
+
+  <!-- ================= HEADER ================= -->
+
+  <div class="flex justify-between items-center mb-6">
+
+    <div>
+
+      <div class="flex items-center gap-3">
+
+        <button
+          (click)="goBack()"
+          class="text-gray-500 hover:text-gray-700 text-xl">
+          ←
+        </button>
+
+        <h1 class="text-2xl font-bold">
+          {{ planning.nom }}
+        </h1>
+
+        <span
+  class="px-3 py-1 text-xs rounded-full font-medium"
+  [ngClass]="{
+    'bg-blue-100 text-blue-700': planning.statusMetier === 'GENERE',
+    'bg-green-100 text-green-700': planning.statusMetier === 'VALIDE',
+    'bg-gray-100 text-gray-600': planning.statusMetier === 'BROUILLON'
+  }"
+>
+  {{
+    planning.statusMetier === 'GENERE' ? 'Généré' :
+    planning.statusMetier === 'VALIDE' ? 'Validé' :
+    'Brouillon'
+  }}
+</span>
+
+      </div>
+
+      <p class="text-sm text-gray-500 mt-1">
+        Projet : {{ planning.projet?.nom }}
+      </p>
+
+    </div>
+
+
+    <div class="flex gap-3 flex-wrap">
+
+      <select
+  [(ngModel)]="selectedVersionId"
+  (ngModelChange)="onVersionChange($event)"
+  class="px-4 py-2 bg-gray-200 rounded-lg text-sm">
+
+  <option *ngFor="let v of versions" [ngValue]="v.id">
+    {{ v.version }}
+  </option>
+
+</select>
+
+      <button class="px-4 py-2 bg-gray-100 rounded-lg text-sm hover:bg-gray-200">
+        Régénérer
+      </button>
+
+      <button class="px-4 py-2 bg-gray-100 rounded-lg text-sm hover:bg-gray-200">
+        Sauvegarder
+      </button>
+
+      <button class="px-4 py-2 bg-gray-100 rounded-lg text-sm hover:bg-gray-200">
+        Exporter
+      </button>
+
+      <button
+  (click)="validerPlanning()"
+  [disabled]="planning.statusMetier === 'VALIDE'"
+  class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
+  Valider
+</button>
+
+    </div>
+
+  </div>
+
+
+  <!-- ================= AJUSTER CHARGE ================= -->
+
+  <div class="border border-blue-300 bg-blue-50 rounded-xl p-6 mb-8 flex justify-between items-center">
+
+    <div>
+
+      <p class="font-semibold text-blue-900">
+        Ajuster la charge et recalculer le planning
+      </p>
+
+      <p class="text-sm text-blue-700">
+        Modifiez le taux de charge ou la capacité de l'équipe pour générer une nouvelle version
+      </p>
+
+    </div>
+
+    <button
+  (click)="openRecalcModal()"
+  class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+  Ajuster & Recalculer
+</button>
+
+  </div>
+
+
+  <!-- ================= TABS ================= -->
+
+  <div class="flex gap-8 border-b mb-8 text-sm font-medium">
+
+    <button
+      (click)="setTab('overview')"
+      [class.border-b-2]="activeTab === 'overview'"
+      [class.border-blue-600]="activeTab === 'overview'"
+      class="pb-3">
+
+      Vue d'ensemble
+
+    </button>
+
+
+    <button
+      (click)="setTab('gantt')"
+      [class.border-b-2]="activeTab === 'gantt'"
+      [class.border-blue-600]="activeTab === 'gantt'"
+      class="pb-3">
+
+      Planning (Gantt)
+
+    </button>
+
+
+    <button
+      (click)="setTab('phases')"
+      [class.border-b-2]="activeTab === 'phases'"
+      [class.border-blue-600]="activeTab === 'phases'"
+      class="pb-3">
+
+      Phases
+
+    </button>
+
+  </div>
+
+
+  <!-- ================= OVERVIEW ================= -->
+
+  <div *ngIf="isOverview()" class="bg-white p-8 rounded-2xl shadow-sm border">
+
+    <h3 class="font-semibold mb-8">
+      Vue d'ensemble du projet
+    </h3>
+
+
+    <div class="grid grid-cols-2 gap-y-6 text-sm">
+
+      <div class="flex justify-between">
+        <span class="text-gray-500">Projet:</span>
+        <span class="font-medium">{{ planning.projet?.nom }}</span>
+      </div>
+
+      <div class="flex justify-between">
+        <span class="text-gray-500">Charge totale:</span>
+        <span class="font-medium">{{ planning.chargeTotale || 0 }} j-h</span>
+      </div>
+
+
+      <div class="flex justify-between">
+        <span class="text-gray-500">Version:</span>
+        <span class="font-medium">{{ planning.version }}</span>
+      </div>
+
+      <div class="flex justify-between">
+        <span class="text-gray-500">Ressources:</span>
+        <span class="font-medium">{{ planning.totalRessources || 0 }} pers.</span>
+      </div>
+
+
+      <div class="flex justify-between">
+        <span class="text-gray-500">Statut:</span>
+
+        <span
+  class="px-2 py-1 text-xs rounded"
+  [ngClass]="{
+    'bg-blue-100 text-blue-700': planning.statusMetier === 'GENERE',
+    'bg-green-100 text-green-700': planning.statusMetier === 'VALIDE',
+    'bg-gray-100 text-gray-600': planning.statusMetier === 'BROUILLON'
+  }"
+>
+  {{
+    planning.statusMetier === 'GENERE' ? 'Généré' :
+    planning.statusMetier === 'VALIDE' ? 'Validé' :
+    'Brouillon'
+  }}
+</span>
+
+      </div>
+
+
+      <div class="flex justify-between">
+        <span class="text-gray-500">Taux de charge:</span>
+        <span class="font-medium">{{ planning.tauxCharge || 0 }} %</span>
+      </div>
+
+
+      <div class="flex justify-between">
+        <span class="text-gray-500">Durée totale:</span>
+        <span class="font-medium">{{ durationDays }} jours</span>
+      </div>
+
+
+      <div class="flex justify-between">
+        <span class="text-gray-500">Date fin estimée:</span>
+        <span class="font-medium">
+          {{ planning.dateFin | date:'yyyy-MM-dd' }}
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ================= GANTT ================= -->
+
+  <div *ngIf="isGantt()">
+
+    <app-planning-gantt
+      *ngIf="planning?.dateDebut && planning?.dateFin"
+      [planning]="planning"
+      [phases]="phases">
+    </app-planning-gantt>
+
+  </div>
+
+
+  <!-- ================= PHASES ================= -->
+<div *ngIf="isPhases()">
+
+  <!-- TIMELINE -->
+  <div class="bg-white p-8 rounded-2xl shadow-sm border mb-6">
+    <div class="flex justify-between items-center mb-8">
+      <h3 class="font-semibold">Timeline des phases</h3>
+      <button (click)="openAddPhaseModal()"
+              class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+        + Ajouter une phase
+      </button>
+    </div>
+
+    <div class="relative flex justify-between items-start px-8">
+      <!-- ligne de connexion -->
+      <div class="absolute top-6 left-0 right-0 h-px bg-gray-200 mx-16"></div>
+
+      <div *ngFor="let phase of phases" class="flex flex-col items-center z-10 w-32">
+        <!-- cercle -->
+        <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-sm shadow"
+             [ngClass]="{
+               'bg-green-500': phase.statut === 'Terminé',
+               'bg-blue-600':  phase.statut === 'En cours',
+               'bg-gray-400':  phase.statut === 'Non démarré' || phase.statut === 'EN_ATTENTE',
+               'bg-red-500':   phase.statut === 'En retard',
+               'bg-orange-400':phase.statut === 'Bloqué'
+             }">
+          <span *ngIf="phase.statut === 'Terminé'">✓</span>
+          <span *ngIf="phase.statut !== 'Terminé'">{{ phase.ordre }}</span>
+        </div>
+
+        <p class="mt-3 font-medium text-center text-sm">{{ phase.nom }}</p>
+
+        <span class="mt-1 text-xs px-2 py-0.5 rounded-full"
+              [ngClass]="getStatusBadgeClass(phase.statut)">
+          {{ phase.statut }}
+        </span>
+
+        <span *ngIf="phase.progression !== null"
+              class="mt-1 text-xs text-gray-500">
+          {{ phase.progression }}%
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLEAU -->
+  <div class="bg-white rounded-2xl shadow-sm border">
+    <div class="p-6 border-b">
+      <h3 class="font-semibold">Toutes les phases</h3>
+    </div>
+
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+        <tr>
+          <th class="px-4 py-3 text-left w-8">ORDRE</th>
+          <th class="px-4 py-3 text-left">NOM DE LA PHASE</th>
+          <th class="px-4 py-3 text-left">DÉBUT PRÉVU</th>
+          <th class="px-4 py-3 text-left">FIN PRÉVUE</th>
+          <th class="px-4 py-3 text-left">DÉBUT RÉEL</th>
+          <th class="px-4 py-3 text-left">FIN RÉELLE</th>
+          <th class="px-4 py-3 text-left">PROGRESSION</th>
+          <th class="px-4 py-3 text-left">STATUT</th>
+          <th class="px-4 py-3 text-left">RESPONSABLE</th>
+          <th class="px-4 py-3 text-left">ACTIONS LIÉES</th>
+          <th class="px-4 py-3 text-left">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <tr *ngFor="let phase of phases" class="hover:bg-gray-50">
+          <td class="px-4 py-4 text-gray-400">⠿</td>
+          <td class="px-4 py-4">
+            <span class="text-blue-600 font-medium cursor-pointer hover:underline"
+                  (click)="openEditPhaseModal(phase)">
+              {{ phase.nom }}
+            </span>
+          </td>
+          <td class="px-4 py-4 text-gray-600">{{ phase.debutPrevu | date:'yyyy-MM-dd' }}</td>
+          <td class="px-4 py-4 text-gray-600">{{ phase.finPrevue | date:'yyyy-MM-dd' }}</td>
+          <td class="px-4 py-4 text-gray-600">{{ phase.debutReel ? (phase.debutReel | date:'yyyy-MM-dd') : '-' }}</td>
+          <td class="px-4 py-4 text-gray-600">{{ phase.finReelle ? (phase.finReelle | date:'yyyy-MM-dd') : '-' }}</td>
+          <td class="px-4 py-4">
+            <div class="flex items-center gap-2">
+              <div class="flex-1 bg-gray-200 rounded-full h-2 w-24">
+                <div class="bg-blue-600 h-2 rounded-full"
+                     [style.width.%]="phase.progression || 0"></div>
+              </div>
+              <span class="text-xs font-medium">{{ phase.progression || 0 }}%</span>
+            </div>
+          </td>
+          <td class="px-4 py-4">
+            <span class="px-2 py-1 rounded text-xs font-medium"
+                  [ngClass]="getStatusBadgeClass(phase.statut)">
+              {{ phase.statut }}
+            </span>
+          </td>
+          <td class="px-4 py-4 text-gray-600">{{ phase.responsable || '-' }}</td>
+          <td class="px-4 py-4">
+            <span *ngIf="phase.actionsLiees" class="text-blue-600 font-medium">
+              {{ phase.actionsLiees }}
+            </span>
+            <span *ngIf="!phase.actionsLiees" class="text-gray-400">-</span>
+          </td>
+          <td class="px-4 py-4">
+            <div class="flex gap-2">
+              <button (click)="openEditPhaseModal(phase)"
+                      class="text-gray-400 hover:text-gray-600"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
+  <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" />
+</svg>
+</button>
+              <button (click)="deletePhase(phase.id)"
+                      class="text-gray-400 hover:text-red-500"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
+  <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
+</svg>
+</button>
+
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= MODAL PHASE ================= -->
+<div *ngIf="showAddPhaseModal"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white w-[560px] max-h-[90vh] overflow-y-auto rounded-2xl p-6 space-y-5 shadow-xl">
+
+    <!-- Header -->
+    <div class="flex justify-between items-start">
+      <div>
+        <h2 class="text-lg font-semibold">
+          {{ editingPhase ? 'Modifier la phase' : 'Ajouter une phase' }}
+        </h2>
+        <p class="text-sm text-gray-500 mt-1">
+          {{ editingPhase ? 'Modifiez les informations de la phase' : 'Créez une nouvelle phase pour structurer votre planning' }}
+        </p>
+      </div>
+      <button (click)="showAddPhaseModal = false" class="text-gray-400 hover:text-gray-600">✕</button>
+    </div>
+
+    <!-- Nom -->
+    <div>
+      <label class="block text-sm font-medium mb-1">Nom de la phase <span class="text-red-500">*</span></label>
+      <input type="text" [(ngModel)]="newPhase.nom"
+             placeholder="Ex: Analyse & Conception"
+             class="w-full border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+    </div>
+
+    <!-- Description -->
+    <div>
+      <label class="block text-sm font-medium mb-1">Description</label>
+      <textarea [(ngModel)]="newPhase.description" rows="3"
+                placeholder="Description de la phase..."
+                class="w-full border rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"></textarea>
+    </div>
+
+    <!-- Dates prévues -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Date de début prévue <span class="text-red-500">*</span></label>
+        <input type="date" [(ngModel)]="newPhase.dateDebut"
+               class="w-full border rounded-lg p-2.5 text-sm">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Date de fin prévue <span class="text-red-500">*</span></label>
+        <input type="date" [(ngModel)]="newPhase.dateFin"
+               class="w-full border rounded-lg p-2.5 text-sm">
+      </div>
+    </div>
+
+    <!-- Poids + Responsable -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">
+          Poids (%) : {{ newPhase.poids }}%
+        </label>
+        <input type="range" min="0" max="100" [(ngModel)]="newPhase.poids"
+               class="w-full accent-blue-600">
+        <p class="text-xs text-gray-400 mt-1">Utilisé pour calculer la progression globale</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Responsable</label>
+        <input type="text" [(ngModel)]="newPhase.responsable"
+               placeholder="Nom du responsable"
+               class="w-full border rounded-lg p-2.5 text-sm">
+      </div>
+    </div>
+
+    <!-- Statut -->
+    <div>
+      <label class="block text-sm font-medium mb-1">Statut</label>
+      <select [(ngModel)]="newPhase.statut"
+              class="w-full border rounded-lg p-2.5 text-sm">
+        <option>Non démarré</option>
+        <option>En cours</option>
+        <option>Terminé</option>
+        <option>Bloqué</option>
+        <option>En retard</option>
+      </select>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-3 pt-2">
+      <button (click)="showAddPhaseModal = false"
+              class="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">
+        Annuler
+      </button>
+      <button (click)="savePhase()"
+              [disabled]="!newPhase.nom || !newPhase.dateDebut || !newPhase.dateFin"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+        {{ editingPhase ? 'Enregistrer' : 'Ajouter' }}
+      </button>
+    </div>
+  </div>
+</div>
+<div *ngIf="showRecalcModal"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+
+  <div class="bg-white w-[520px] max-h-[90vh] overflow-y-auto rounded-2xl p-6 space-y-5 shadow-xl">
+
+    <!-- HEADER -->
+    <div class="flex justify-between items-start">
+      <div>
+        <h2 class="text-lg font-semibold">
+          Ajuster la charge et recalculer
+        </h2>
+        <p class="text-sm text-gray-500 mt-1">
+          Modifiez les paramètres de capacité. Une nouvelle version du planning sera créée.
+        </p>
+      </div>
+
+      <button (click)="showRecalcModal = false">✕</button>
+    </div>
+
+    <!-- TEAM -->
+    <div>
+      <p class="font-medium mb-2">Taille de l'équipe</p>
+
+      <div class="grid grid-cols-3 gap-4">
+
+        <div>
+          <label class="text-sm text-gray-600">Développeurs</label>
+          <input type="number" [(ngModel)]="formRecalc.dev"
+                 class="w-full border rounded-lg p-2 mt-1">
+        </div>
+
+        <div>
+          <label class="text-sm text-gray-600">Consultants</label>
+          <input type="number" [(ngModel)]="formRecalc.func"
+                 class="w-full border rounded-lg p-2 mt-1">
+        </div>
+
+        <div>
+          <label class="text-sm text-gray-600">Testeurs</label>
+          <input type="number" [(ngModel)]="formRecalc.test"
+                 class="w-full border rounded-lg p-2 mt-1">
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAUX -->
+    <div class="border-2 border-blue-300 bg-blue-50 p-5 rounded-xl">
+
+      <p class="font-medium mb-2">Taux de charge moyen (%)</p>
+
+      <input type="number"
+             [(ngModel)]="formRecalc.taux"
+             class="w-full border rounded-lg p-2 mb-3">
+
+      <p class="text-sm text-gray-600">
+        Taux de productivité effective appliqué à l'équipe
+      </p>
+
+      <div class="bg-white border rounded-lg p-3 mt-3 text-sm text-gray-700">
+        Impact du changement :<br>
+        {{ heuresParJour }}h/j × {{ formRecalc.taux }}% =
+        <strong>{{ capaciteParJour | number:'1.1-1' }}h</strong> effective/jour par ressource
+      </div>
+
+    </div>
+
+    <!-- CALENDRIER -->
+    <div>
+      <p class="font-medium mb-2">Calendrier de travail</p>
+
+      <div class="grid grid-cols-2 gap-4">
+
+        <div>
+          <label class="text-sm text-gray-600">Jours par semaine</label>
+          <select [(ngModel)]="formRecalc.jours"
+                  class="w-full border rounded-lg p-2 mt-1">
+            <option [value]="5">5 jours</option>
+            <option [value]="6">6 jours</option>
+            <option [value]="7">7 jours</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-sm text-gray-600">Heures par jour</label>
+          <input type="number"
+                 [value]="heuresParJour"
+                 class="w-full border rounded-lg p-2 mt-1 bg-gray-100"
+                 disabled>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="bg-gray-100 rounded-xl p-5">
+
+      <p class="text-sm text-gray-600 mb-2">
+        Nouvelle capacité hebdomadaire:
+      </p>
+
+      <p class="text-2xl font-bold text-blue-600">
+        {{ capaciteHebdo | number:'1.0-1' }}h
+      </p>
+
+      <p class="text-sm text-gray-500 mt-1">
+        {{ totalRessources }} ressources × {{ heuresParJour }}h × {{ formRecalc.taux }}% × {{ formRecalc.jours }} jours
+      </p>
+
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="flex justify-end gap-3">
+
+      <button (click)="showRecalcModal = false"
+              class="px-4 py-2 border rounded-lg">
+        Annuler
+      </button>
+
+      <button (click)="generateNewVersion()"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg">
+        Générer nouvelle version
+      </button>
+
+    </div>
+
+  </div>
+</div>

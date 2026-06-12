@@ -1,0 +1,430 @@
+<!-- Loading state -->
+<div *ngIf="isLoading" class="flex items-center justify-center h-64">
+  <svg class="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+</div>
+
+<div *ngIf="!isLoading">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Vue d'ensemble</h1>
+      <p class="text-sm text-gray-500 mt-1">Activité globale MOMsoft — {{ totalProjets }} projet(s) suivi(s)</p>
+    </div>
+    <button (click)="loadData()"
+      class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Actualiser
+    </button>
+  </div>
+
+  <!-- Alerte projets bloqués -->
+  <div *ngIf="projetsBloquesCount > 0"
+    class="flex items-center gap-3 px-4 py-3 mb-6 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+    <svg class="w-5 h-5 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span><strong>{{ projetsBloquesCount }} projet(s)</strong> en attente de validation.</span>
+  </div>
+
+  <!-- ── KPI Cards ─────────────────────────────────────────────────────────── -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div class="p-2 bg-blue-50 rounded-lg">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+        </div>
+        <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">Total</span>
+      </div>
+      <p class="text-3xl font-bold text-gray-900">{{ totalProjets }}</p>
+      <p class="text-sm text-gray-500 mt-1">Projets actifs</p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div class="p-2 bg-green-50 rounded-lg">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <span class="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">Validés</span>
+      </div>
+      <p class="text-3xl font-bold text-gray-900">{{ nbProjetsValides }}</p>
+      <p class="text-sm text-gray-500 mt-1">Projets validés</p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div class="p-2 bg-yellow-50 rounded-lg">
+          <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <span class="text-xs font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">En attente</span>
+      </div>
+      <p class="text-3xl font-bold text-gray-900">{{ nbProjetsEnAttente }}</p>
+      <p class="text-sm text-gray-500 mt-1">En attente validation</p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div class="p-2 bg-purple-50 rounded-lg">
+          <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </div>
+        <span class="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">Équipe</span>
+      </div>
+      <p class="text-3xl font-bold text-gray-900">{{ nbUsersActifs }}</p>
+      <p class="text-sm text-gray-500 mt-1">Utilisateurs actifs</p>
+    </div>
+
+  </div>
+
+  <!-- ── Analyse par projet ───────────────────────────────────────────────── -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+    <!-- En-tête avec sélecteur -->
+    <div class="flex items-center gap-4 px-6 py-4 border-b border-gray-100">
+      <div class="p-2 bg-indigo-50 rounded-lg flex-shrink-0">
+        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h2 class="text-sm font-semibold text-gray-700">Analyse par projet</h2>
+        <p class="text-xs text-gray-400">Sélectionnez un projet pour voir la répartition de ses exigences</p>
+      </div>
+      <div class="flex-shrink-0">
+        <select
+          [(ngModel)]="selectedProjetId"
+          (ngModelChange)="selectProjet($event)"
+          class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white min-w-[220px]">
+          <option [ngValue]="null">— Sélectionner un projet —</option>
+          <option *ngFor="let p of projets" [ngValue]="p.id">
+            {{ p.nom }}{{ p.client ? ' · ' + p.client : '' }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- État vide -->
+    <div *ngIf="!selectedProjet" class="flex items-center justify-center gap-3 py-10 text-gray-400">
+      <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <span class="text-sm">Aucun projet sélectionné</span>
+    </div>
+
+    <!-- Données du projet sélectionné -->
+    <div *ngIf="selectedProjet" class="p-6">
+
+      <!-- Info projet + KPIs rapides -->
+      <div class="flex flex-wrap items-start gap-4 mb-6">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <h3 class="text-base font-bold text-gray-900 truncate">{{ selectedProjet.nom }}</h3>
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0" [ngClass]="getStatutClass(selectedProjet.statutValidation)">
+              {{ getStatutLabel(selectedProjet.statutValidation) }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-500">{{ selectedProjet.client || 'Client non renseigné' }} · {{ selectedProjet.codeProjet }}</p>
+        </div>
+        <div class="flex gap-3 flex-shrink-0">
+          <div class="text-center px-4 py-2 bg-blue-50 rounded-lg">
+            <p class="text-2xl font-bold text-blue-700">{{ selectedExigences.length }}</p>
+            <p class="text-xs text-blue-500">exigences</p>
+          </div>
+          <div class="text-center px-4 py-2 bg-green-50 rounded-lg">
+            <p class="text-2xl font-bold text-green-700">{{ selectedTauxValidation }}%</p>
+            <p class="text-xs text-green-500">validées</p>
+          </div>
+          <button (click)="goToProjet(selectedProjet.id)"
+            class="self-center px-4 py-2 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors">
+            Ouvrir →
+          </button>
+        </div>
+      </div>
+
+      <!-- Aucune exigence -->
+      <div *ngIf="selectedExigences.length === 0" class="text-center py-6 text-sm text-gray-400 bg-gray-50 rounded-xl">
+        Ce projet ne contient aucune exigence.
+      </div>
+
+      <!-- Graphiques -->
+      <div *ngIf="selectedExigences.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Répartition par type -->
+        <div class="bg-gray-50 rounded-xl p-5">
+          <h4 class="text-sm font-semibold text-gray-700 mb-4">Répartition par type</h4>
+          <div class="flex items-center gap-6">
+            <!-- Donut -->
+            <div class="relative flex-shrink-0">
+              <div class="w-24 h-24 rounded-full" [style.background]="selectedDonutType"></div>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-14 h-14 bg-gray-50 rounded-full flex flex-col items-center justify-center">
+                  <span class="text-base font-bold text-gray-800">{{ selectedExigences.length }}</span>
+                  <span class="text-xs text-gray-400">req.</span>
+                </div>
+              </div>
+            </div>
+            <!-- Barres légende -->
+            <div class="flex-1 space-y-2">
+              <div *ngFor="let t of selectedExParType" class="space-y-0.5">
+                <div class="flex items-center justify-between text-xs">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" [style.background]="t.color"></span>
+                    <span class="text-gray-600">{{ t.label }}</span>
+                  </div>
+                  <span class="font-semibold text-gray-700">{{ t.count }} ({{ t.pct | number:'1.0-0' }}%)</span>
+                </div>
+                <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full" [style.width.%]="t.pct" [style.background]="t.color"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statut validation -->
+        <div class="bg-gray-50 rounded-xl p-5">
+          <h4 class="text-sm font-semibold text-gray-700 mb-4">Statut de validation</h4>
+          <div class="flex items-center gap-6">
+            <!-- Donut -->
+            <div class="relative flex-shrink-0">
+              <div class="w-24 h-24 rounded-full" [style.background]="selectedDonutStatut"></div>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-14 h-14 bg-gray-50 rounded-full flex flex-col items-center justify-center">
+                  <span class="text-base font-bold text-green-600">{{ selectedTauxValidation }}%</span>
+                  <span class="text-xs text-gray-400">valid.</span>
+                </div>
+              </div>
+            </div>
+            <!-- Barres statut -->
+            <div class="flex-1 space-y-3">
+              <div *ngFor="let s of selectedExParStatut" class="space-y-0.5">
+                <div class="flex items-center justify-between text-xs">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" [style.background]="s.color"></span>
+                    <span class="text-gray-600">{{ s.label }}</span>
+                  </div>
+                  <span class="font-semibold text-gray-700">{{ s.count }} ({{ s.pct | number:'1.0-0' }}%)</span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-500" [style.width.%]="s.pct" [style.background]="s.color"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 2: Donut statut + Top clients ────────────────────────────────── -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
+    <!-- Projets par statut -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm lg:col-span-1">
+      <h2 class="text-sm font-semibold text-gray-700 mb-4">Distribution des projets</h2>
+      <div class="flex items-center gap-6">
+        <!-- Donut -->
+        <div class="relative flex-shrink-0">
+          <div class="w-28 h-28 rounded-full" [style.background]="donutStatut"></div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-16 h-16 bg-white rounded-full flex flex-col items-center justify-center">
+              <span class="text-lg font-bold text-gray-900">{{ totalProjets }}</span>
+              <span class="text-xs text-gray-400">projets</span>
+            </div>
+          </div>
+        </div>
+        <!-- Légende -->
+        <div class="flex-1 space-y-2">
+          <div *ngFor="let s of projetsParStatut" class="flex items-center justify-between text-sm">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full flex-shrink-0" [style.background]="s.color"></span>
+              <span class="text-gray-600">{{ s.label }}</span>
+            </div>
+            <span class="font-semibold text-gray-800">{{ s.count }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top clients -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm lg:col-span-2">
+      <h2 class="text-sm font-semibold text-gray-700 mb-4">Top clients par nombre de projets</h2>
+      <div *ngIf="topClients.length === 0" class="text-sm text-gray-400 text-center py-6">
+        Aucun projet enregistré.
+      </div>
+      <div class="space-y-3">
+        <div *ngFor="let c of topClients" class="flex items-center gap-3">
+          <div class="w-24 text-xs text-gray-600 font-medium truncate flex-shrink-0">{{ c.client }}</div>
+          <div class="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full bg-blue-500 rounded-full transition-all duration-500"
+              [style.width.%]="c.pct"></div>
+          </div>
+          <span class="text-xs font-semibold text-gray-700 w-6 text-right">{{ c.count }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Row 3: Statistiques volumes + Users + Ratio IA ───────────────────── -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
+    <!-- Volumes exigences -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <h2 class="text-sm font-semibold text-gray-700 mb-4">Statistiques exigences</h2>
+      <div class="space-y-4">
+        <div>
+          <div class="flex justify-between text-sm mb-1">
+            <span class="text-gray-600">Exigences totales</span>
+            <span class="font-semibold text-gray-800">{{ totalExigences }}</span>
+          </div>
+          <div class="w-full h-2 bg-gray-100 rounded-full">
+            <div class="h-full bg-blue-500 rounded-full" style="width: 100%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-sm mb-1">
+            <span class="text-gray-600">Validées</span>
+            <span class="font-semibold text-green-600">{{ totalExigencesValidees }} ({{ tauxValidationGlobal }}%)</span>
+          </div>
+          <div class="w-full h-2 bg-gray-100 rounded-full">
+            <div class="h-full bg-green-500 rounded-full transition-all duration-500"
+              [style.width.%]="tauxValidationGlobal"></div>
+          </div>
+        </div>
+        <div class="pt-2 grid grid-cols-2 gap-3 border-t border-gray-100">
+          <div class="text-center">
+            <p class="text-xl font-bold text-purple-600">{{ ratioIA }}%</p>
+            <p class="text-xs text-gray-500">Générées IA</p>
+          </div>
+          <div class="text-center">
+            <p class="text-xl font-bold text-orange-500">{{ 100 - ratioIA }}%</p>
+            <p class="text-xs text-gray-500">Manuel</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Utilisateurs par rôle -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <h2 class="text-sm font-semibold text-gray-700 mb-4">Utilisateurs par rôle</h2>
+      <div *ngIf="users.length === 0" class="text-sm text-gray-400 text-center py-6">
+        Aucun utilisateur chargé.
+      </div>
+      <div class="space-y-3">
+        <div *ngFor="let r of usersByRole" class="flex items-center gap-3">
+          <div class="w-28 text-xs text-gray-600 truncate flex-shrink-0">{{ r.label }}</div>
+          <div class="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500"
+              [style.width.%]="r.pct" [style.background]="r.color"></div>
+          </div>
+          <span class="text-xs font-semibold text-gray-700 w-5 text-right">{{ r.count }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ratio IA vs Manuel -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <h2 class="text-sm font-semibold text-gray-700 mb-4">Ratio IA vs Manuel</h2>
+      <div class="flex flex-col justify-center gap-6 pt-2">
+        <!-- Barre combinée -->
+        <div class="w-full h-6 rounded-full overflow-hidden bg-gray-100 flex">
+          <div class="h-full bg-purple-500 transition-all duration-500 flex items-center justify-center"
+            [style.width.%]="ratioIA">
+            <span *ngIf="ratioIA > 15" class="text-xs text-white font-medium">IA</span>
+          </div>
+          <div class="h-full bg-orange-400 flex items-center justify-center flex-1">
+            <span *ngIf="(100 - ratioIA) > 15" class="text-xs text-white font-medium">Manuel</span>
+          </div>
+        </div>
+        <div class="flex justify-around text-center">
+          <div>
+            <p class="text-2xl font-bold text-purple-600">{{ ratioIA }}%</p>
+            <p class="text-xs text-gray-500">Générés IA</p>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-orange-500">{{ 100 - ratioIA }}%</p>
+            <p class="text-xs text-gray-500">Manuel</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Derniers projets ──────────────────────────────────────────────────── -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <h2 class="text-sm font-semibold text-gray-700">Derniers projets</h2>
+      <button (click)="goToProjets()"
+        class="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+        Voir tous
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+
+    <div *ngIf="projets.length === 0" class="text-center py-12 text-sm text-gray-400">
+      <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+      </svg>
+      Aucun projet disponible.
+    </div>
+
+    <table *ngIf="projets.length > 0" class="min-w-full">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Projet</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exigences</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <tr *ngFor="let p of derniersProjets" class="hover:bg-gray-50 transition-colors">
+          <td class="px-6 py-4">
+            <div class="text-sm font-medium text-gray-900">{{ p.nom }}</div>
+            <div class="text-xs text-gray-400">{{ p.codeProjet }}</div>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-600">{{ p.client || '—' }}</td>
+          <td class="px-6 py-4">
+            <span class="text-xs font-medium px-2 py-1 rounded-full" [ngClass]="getModeClass(p.modeCreation)">
+              {{ p.modeCreation || 'Manuel' }}
+            </span>
+          </td>
+          <td class="px-6 py-4">
+            <span class="text-sm text-gray-700 font-medium">{{ p.exigences?.length || 0 }}</span>
+          </td>
+          <td class="px-6 py-4">
+            <span class="text-xs font-medium px-2 py-1 rounded-full" [ngClass]="getStatutClass(p.statutValidation)">
+              {{ getStatutLabel(p.statutValidation) }}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-right">
+            <button (click)="goToProjet(p.id)"
+              class="text-xs text-blue-600 hover:text-blue-700 font-medium">
+              Ouvrir →
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

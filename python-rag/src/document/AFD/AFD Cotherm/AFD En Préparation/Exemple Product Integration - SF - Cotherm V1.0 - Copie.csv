@@ -1,0 +1,11 @@
+Code Produit;Nom Produit;Prix Produit;Unité Produit;Code Client;Devise Produit;Temps de cycle théorique;Unité Temps de cycle théorique;Poids Produit;Poids Tolérance -;Poids Tolérance +;Indice;Code Carton;Capacité par Carton;Code Intercalaire Carton;Code Intercalaire Emballage;Capacité par Intercalaire Emballage;Nombre d'Intercalaire par Carton
+P0001;Produit 1;2;UN;CL01;EUR;1,2;minute;80;3;3;A;Car001;85;INTC001;INTE001;17;5
+P0002;Produit 2;3,5;UN;CL02;EUR;1,2;minute;120;4;4;A;Car002;120;INTC002;INTE002;20;6
+P0003;Produit 3;1,2;UN;CL03;TND;1,5;minute;60;3;3;B;Car002;90;INTC002;INTE003;18;5
+P0004;Produit 4;3,3;UN;CL02;TND;2;minute;36;2;2;B;Car001;60;INTC004;INTE002;10;6
+P0005;Produit 5;2,6;UN;CL03;TND;2,5;minute;156;3;3;B;Car002;64;INTC003;INTE001;16;4
+P0006;Produit 6;3;UN;CL03;TND;3;minute;96;4;4;C;Car001;60;INTC002;INTE002;10;6
+P0007;Produit 7;4;UN;CL02;EUR;1,2;minute;65;3;3;C;Car003;56;INTC002;INTE003;8;7
+P0008;Produit 8;9;UN;CL04;EUR;1;minute;90;4;4;C;Car003;96;INTC002;INTE004;16;6
+P0009;Produit 9;10;UN;CL01;EUR;1;minute;124;4;4;A;Car004;63;INTC003;INTE002;21;3
+P0010;Produit 10;4,5;UN;CL04;TND;0,5;minute;220;5;5;A;Car004;60;INTC001;INTE001;10;6

@@ -1,0 +1,135 @@
+.btn-new {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-new:hover {
+  background: #1e40af;
+}
+
+.filters-card {
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* Search */
+.search-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #e5e7eb;
+  padding: 10px 14px;
+  border-radius: 12px;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 14px;
+}
+
+/* Filters group */
+.filters-group {
+  display: flex;
+  gap: 12px;
+}
+
+/* Dropdown */
+.dropdown {
+  position: relative;
+  cursor: pointer;
+}
+
+.dropdown-label {
+  background: #e5e7eb;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 160px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: white;
+  border-radius: 12px;
+  padding: 8px 0;
+  width: 220px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.table-card {
+  margin-top: 20px;
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 
+    2fr     /* Nom */
+    1.5fr   /* Projet */
+    0.8fr   /* Version */
+    1.5fr   /* Phase */
+    1.2fr   /* Progression */
+    1fr     /* Date début */
+    1fr     /* Date fin */
+    1fr     /* Statut */
+    0.5fr;  /* Actions */
+
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.col {
+  display: flex;
+  align-items: center;
+}
+.success-snackbar {
+  background: #ffffff;
+  color: #111827;
+  border-left: 5px solid #22c55e;
+  font-weight: 500;
+}
+
+.error-snackbar {
+  background: #ffffff;
+  color: #111827;
+  border-left: 5px solid #ef4444;
+  font-weight: 500;
+}
