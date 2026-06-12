@@ -19,9 +19,13 @@ pipeline {
         stage('Checkout') {
         // ─────────────────────────────────────────────
             steps {
-                git credentialsId: 'github_token',
-                    url: 'https://github.com/malek-bdiri/PFE_Malek.git',
-                    branch: 'main'
+                checkout scmGit(
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        credentialsId: 'github_token',
+                        url: 'https://github.com/malek-bdiri/PFE_Malek.git'
+                    ]]
+                )
             }
         }
 
@@ -75,8 +79,11 @@ pipeline {
         stage('Deploy') {
         // ─────────────────────────────────────────────
             steps {
-                withCredentials([string(credentialsId: 'dockerhub_token', variable: 'DOCKERHUB_TOKEN')]) {
-                    sh "echo \$DOCKERHUB_TOKEN | docker login -u ${DOCKERHUB_USER} --password-stdin"
+                withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub_token',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS')]) {
+                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
 
                     sh "docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}"
                     sh "docker push ${FRONTEND_IMAGE}:latest"
