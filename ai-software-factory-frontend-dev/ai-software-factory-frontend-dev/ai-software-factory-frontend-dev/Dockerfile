@@ -4,14 +4,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --legacy-peer-deps
 COPY . .
-# Disable strict template checks for CI build
-RUN node -e "\
-  const fs=require('fs');\
-  const t=JSON.parse(fs.readFileSync('tsconfig.json','utf8'));\
-  t.angularCompilerOptions.strictTemplates=false;\
-  t.compilerOptions.strict=false;\
-  fs.writeFileSync('tsconfig.json',JSON.stringify(t,null,2));\
-"
 RUN npm run build -- --configuration production
 
 # Stage 2: Serve with nginx
