@@ -1,4 +1,207 @@
-<div class="p-6">
-  <h1 class="text-2xl font-bold text-gray-800 mb-4">Nouvelle Analyse</h1>
-  <button (click)="cancel()" class="text-sm text-gray-500 hover:underline">← Retour</button>
+<!-- Breadcrumb -->
+<div class="text-sm text-gray-500 mb-6">
+  <span routerLink="/admin/dashboard" class="cursor-pointer hover:text-gray-700">Tableau de bord</span>
+  <span class="mx-2">›</span>
+  <span routerLink="/admin/analyse" class="cursor-pointer hover:text-gray-700">Analyse fonctionnelle</span>
+  <span class="mx-2">›</span>
+  <span class="text-gray-900 font-medium">Nouvelle analyse</span>
+</div>
+
+<!-- Header -->
+<div class="flex items-center gap-4 mb-8">
+  <button (click)="goBack()"
+          class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+    ←
+  </button>
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Nouvelle analyse fonctionnelle</h1>
+    <p class="text-sm text-gray-500 mt-1">Créez une analyse fonctionnelle à partir des exigences d'un projet</p>
+  </div>
+</div>
+
+<!-- Layout 2 colonnes -->
+<div class="flex gap-6">
+
+  <!-- Colonne gauche -->
+  <div class="flex-1 space-y-6">
+
+    <!-- Projet source -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-base font-semibold text-gray-900 mb-5">Projet source</h2>
+
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Projet <span class="text-red-500">*</span>
+        </label>
+        <select [(ngModel)]="selectedProjetId"
+                class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option [ngValue]="null">Sélectionner un projet...</option>
+          <option *ngFor="let p of projets" [ngValue]="p.id">{{ p.nom }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Description de l'analyse <span class="text-red-500">*</span>
+        </label>
+        <textarea [(ngModel)]="description"
+                  rows="4"
+                  placeholder="Décrivez l'objectif de cette analyse fonctionnelle..."
+                  class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">
+        </textarea>
+      </div>
+    </div>
+
+    <!-- Génération IA -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <div class="flex justify-between items-center mb-5">
+        <h2 class="text-base font-semibold text-gray-900">Génération assistée par IA</h2>
+        <button class="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+</svg> IA activée
+        </button>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5">
+        <p class="text-sm text-blue-700">
+          L'IA générera l'architecture fonctionnelle à partir des exigences du projet sélectionné
+          et de la documentation produit associée.
+        </p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Instructions pour l'IA (optionnel)
+        </label>
+        <textarea [(ngModel)]="aiInstructions"
+                  rows="4"
+                  placeholder="Ex: Privilégier une architecture en couches, identifier les flux métier critiques..."
+                  class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">
+        </textarea>
+        <p class="text-xs text-gray-400 mt-1">Guidez l'IA sur les aspects spécifiques à prendre en compte</p>
+      </div>
+    </div>
+
+    <!-- Documents complémentaires -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-base font-semibold text-gray-900 mb-5">Documents complémentaires</h2>
+
+      <!-- Drop zone -->
+      <div (dragover)="onDragOver($event)"
+           (dragleave)="onDragLeave()"
+           (drop)="onDrop($event)"
+           (click)="fileInput.click()"
+           [ngClass]="isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 bg-gray-50'"
+           class="border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50">
+
+        <div class="flex flex-col items-center gap-3">
+          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+          </svg>
+          <p class="text-sm font-medium text-gray-700">Cliquez pour ajouter des documents</p>
+          <p class="text-xs text-gray-400">Schémas, spécifications techniques, etc.</p>
+        </div>
+
+        <input #fileInput type="file" multiple class="hidden"
+               (change)="onFileSelected($event)"
+               accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+      </div>
+
+      <!-- Liste fichiers -->
+      <div *ngIf="uploadedFiles.length > 0" class="mt-4 space-y-2">
+        <div *ngFor="let file of uploadedFiles; let i = index"
+             class="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
+          <div class="flex items-center gap-3">
+            <span class="text-lg">{{ getFileIcon(file) }}</span>
+            <div>
+              <p class="text-sm font-medium text-gray-700">{{ file.name }}</p>
+              <p class="text-xs text-gray-400">{{ formatFileSize(file.size) }}</p>
+            </div>
+          </div>
+          <button (click)="removeFile(i)" class="text-gray-400 hover:text-red-500 text-lg">✕</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Colonne droite -->
+  <div class="w-80 space-y-4">
+
+    <!-- Source IA -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h3 class="text-sm font-semibold text-gray-900 mb-4">Source IA</h3>
+      <div class="space-y-3">
+        <div class="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+          <span class="text-blue-500 text-lg"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+</svg>
+</span>
+          <div>
+            <p class="text-sm font-medium text-blue-700">Exigences projet</p>
+            <p class="text-xs text-blue-500">Toutes les exigences validées du projet</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+          <span class="text-green-500 text-lg"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+</svg>
+</span>
+          <div>
+            <p class="text-sm font-medium text-green-700">Documentation produit</p>
+            <p class="text-xs text-green-500">Spécifications et guides techniques</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prochaines étapes -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h3 class="text-sm font-semibold text-gray-900 mb-4">Prochaines étapes</h3>
+      <ol class="space-y-2 text-sm text-gray-600">
+        <li class="flex items-start gap-2">
+          <span class="text-gray-400 font-medium">1.</span>
+          Génération de l'architecture fonctionnelle
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-gray-400 font-medium">2.</span>
+          Validation des blocs fonctionnels
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-gray-400 font-medium">3.</span>
+          Création des AFD (Analyses Fonctionnelles Détaillées)
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-gray-400 font-medium">4.</span>
+          Traçabilité exigences → AFD
+        </li>
+      </ol>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Footer actions -->
+<div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+  <button (click)="goBack()"
+          class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+    Annuler
+  </button>
+  <button (click)="generate()"
+          class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+    </svg>
+    Générer l'architecture fonctionnelle
+  </button>
+</div>
+
+<!-- Toast erreur -->
+<div *ngIf="errorMessage"
+     class="fixed bottom-6 right-6 z-50 bg-white shadow-xl border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-3">
+  <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold">!</div>
+  <p class="text-sm text-gray-800">{{ errorMessage }}</p>
 </div>

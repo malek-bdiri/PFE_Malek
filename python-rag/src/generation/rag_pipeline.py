@@ -220,6 +220,7 @@ class RAGPipeline:
                 "success": llm_result["success"],
                 "provider": llm_result["provider"],
                 "model": llm_result["model"],
+                "error": llm_result.get("error"),
             },
             "pipeline_metadata": {
                 "cdc_text_chars": len(cdc_text),
@@ -229,6 +230,175 @@ class RAGPipeline:
                 "timestamp": start_time.isoformat(),
             },
             "documents_used": docs_cdc_exig + docs_guide,
+        }
+
+    def generate_afd_from_exigences(
+        self,
+        exigences_list: list,
+        project_name: str = "",
+        client_name: str = "",
+        product_name: str = "Smart Factory MOMsoft",
+        top_k: int = 4,
+    ) -> dict:
+        """Pipeline dédié à la génération d'AFDs depuis une liste d'exigences.
+
+        1. Cherche des exemples AFD similaires dans la KB (category='AFD')
+        2. Rerank pour garder les plus pertinents
+        3. Construit le prompt build_afd_from_exigences()
+        4. Appelle le LLM
+        5. Retourne les AFDs parsées
+
+        Args:
+            exigences_list: Liste de dicts exigences (id, type, intitule, description, ...)
+            project_name:   Nom du projet
+            client_name:    Nom du client
+            product_name:   Nom du produit MOMsoft
+            top_k:          Nb de chunks AFD similaires à récupérer
+
+        Returns:
+            Dict avec response (parsed_json.afds), pipeline_metadata, documents_used
+        """
+        start_time = datetime.now()
+
+        query = " ".join(ex.get("intitule", "") for ex in exigences_list[:6]).strip()
+
+        print("-" * 55)
+        print(f"[AFD FROM EXIGENCES] Génération pour {len(exigences_list)} exigences")
+
+        print(f"[1/4] RETRIEVER - recherche AFDs similaires (top_k={top_k * 2})")
+        candidates = self.retriever.search(query, top_k=top_k * 2, category="AFD")
+        print(f"      -> {len(candidates)} candidats")
+
+        print(f"[2/4] RERANKER - sélection top {top_k}")
+        docs_afd = self.reranker.rerank(query, candidates, top_k=top_k)
+        print(f"      -> {len(docs_afd)} docs AFD retenus")
+
+        print(f"[3/4] PROMPT BUILDER - build_afd_from_exigences()")
+        from src.generation.prompt_builder import PromptBuilder
+        builder = PromptBuilder(generation_type="afd_from_exigences")
+        prompt = builder.build_afd_from_exigences(
+            exigences_list=exigences_list,
+            docs_afd=docs_afd,
+            project_name=project_name,
+            client_name=client_name,
+            product_name=product_name,
+        )
+        dbg = prompt["debug_info"]
+        print(f"      -> {dbg['nb_exigences']} exigences | {dbg['exemples_chars']} chars exemples")
+
+        print(f"[4/4] LLM - génération ({self.llm._provider})")
+        llm_result = self.llm.generate(prompt)
+        elapsed = (datetime.now() - start_time).total_seconds()
+        print(f"      -> Succès: {llm_result['success']} | Durée: {elapsed:.1f}s")
+        print("-" * 55)
+
+        return {
+            "query": query,
+            "generation_type": "afd_from_exigences",
+            "response": {
+                "raw_text": llm_result["raw_text"],
+                "parsed_json": llm_result["parsed_json"],
+                "success": llm_result["success"],
+                "provider": llm_result["provider"],
+                "model": llm_result["model"],
+                "error": llm_result.get("error"),
+            },
+            "pipeline_metadata": {
+                "nb_exigences_input": len(exigences_list),
+                "afd_docs_count": len(docs_afd),
+                "retriever_candidates": len(candidates),
+                "elapsed_seconds": round(elapsed, 2),
+                "timestamp": start_time.isoformat(),
+            },
+            "documents_used": docs_afd,
+        }
+
+    def generate_tests(
+        self,
+        afd_titre: str,
+        exigence_description: str = "",
+        champs: str = "",
+        regles: str = "",
+        gaps: str = "",
+        top_k: int = 4,
+    ) -> dict:
+        """Pipeline dédié à la génération de cas de test depuis une AFD.
+
+        1. Recherche dans ChromaDB les chunks AFD similaires (category="AFD")
+        2. Rerank pour garder les plus pertinents
+        3. Construit le prompt avec build_testing()
+        4. Appelle le LLM avec le system prompt "testing"
+        5. Retourne les scénarios parsés
+
+        Args:
+            afd_titre:            Titre de l'AFD (ex: "AFD-003 - Gestion des machines")
+            exigence_description: Description de l'exigence couverte
+            champs:               Champs du formulaire
+            regles:               Règles de gestion
+            gaps:                 GAPs ou contraintes identifiés
+            top_k:                Nb de chunks AFD similaires à récupérer
+
+        Returns:
+            Dict avec response (parsed_json.scenarios), pipeline_metadata, documents_used
+        """
+        start_time = datetime.now()
+
+        # Requête de recherche : on cherche des AFDs similaires dans la KB
+        query = f"cas de test {afd_titre} {champs} {regles}".strip()
+
+        print("-" * 55)
+        print(f"[TESTING] Génération pour AFD : {afd_titre}")
+
+        # Etape 1 : Retriever — cherche des AFDs similaires dans ChromaDB
+        print(f"[1/4] RETRIEVER - recherche AFDs similaires (top_k={top_k * 2})")
+        candidates = self.retriever.search(query, top_k=top_k * 2, category="AFD")
+        print(f"      -> {len(candidates)} candidats trouvés")
+
+        # Etape 2 : Rerank
+        print(f"[2/4] RERANKER - sélection top {top_k}")
+        afd_docs = self.reranker.rerank(query, candidates, top_k=top_k)
+        print(f"      -> {len(afd_docs)} docs AFD retenus")
+
+        # Etape 3 : Prompt Builder dédié testing
+        print(f"[3/4] PROMPT BUILDER - build_testing()")
+        from src.generation.prompt_builder import PromptBuilder
+        builder = PromptBuilder(generation_type="testing")
+        prompt = builder.build_testing(
+            afd_titre=afd_titre,
+            afd_docs=afd_docs,
+            exigence_description=exigence_description,
+            champs=champs,
+            regles=regles,
+            gaps=gaps,
+        )
+        dbg = prompt["debug_info"]
+        print(f"      -> {dbg['afd_docs_count']} docs | AFD block: {dbg['afd_block_chars']} chars")
+
+        # Etape 4 : LLM
+        print(f"[4/4] LLM - génération ({self.llm._provider})")
+        llm_result = self.llm.generate(prompt)
+        elapsed = (datetime.now() - start_time).total_seconds()
+        print(f"      -> Succès: {llm_result['success']} | Durée: {elapsed:.1f}s")
+        print("-" * 55)
+
+        return {
+            "query": query,
+            "generation_type": "testing",
+            "response": {
+                "raw_text": llm_result["raw_text"],
+                "parsed_json": llm_result["parsed_json"],
+                "success": llm_result["success"],
+                "provider": llm_result["provider"],
+                "model": llm_result["model"],
+            },
+            "pipeline_metadata": {
+                "afd_titre": afd_titre,
+                "afd_docs_count": len(afd_docs),
+                "retriever_candidates": len(candidates),
+                "elapsed_seconds": round(elapsed, 2),
+                "timestamp": start_time.isoformat(),
+            },
+            "documents_used": afd_docs,
         }
 
 

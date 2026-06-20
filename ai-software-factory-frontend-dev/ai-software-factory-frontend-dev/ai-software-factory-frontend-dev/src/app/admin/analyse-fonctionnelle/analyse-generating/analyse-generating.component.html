@@ -1,4 +1,98 @@
-<div class="p-6 flex flex-col items-center justify-center min-h-64">
-  <div class="text-blue-600 text-lg font-semibold mb-4">Génération en cours...</div>
-  <button (click)="back()" class="text-sm text-gray-500 hover:underline">← Retour</button>
+<div class="flex flex-col items-center justify-center min-h-[70vh] px-8">
+
+  <!-- Spinner -->
+  <div class="mb-8">
+    <svg class="spinner w-16 h-16 text-blue-600"
+         fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10"
+              stroke="currentColor" stroke-width="3"/>
+      <path class="opacity-75" fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
+  </div>
+
+  <!-- Title -->
+  <h1 class="text-2xl font-bold text-gray-900 mb-2">Génération en cours...</h1>
+  <p class="text-sm text-gray-500 mb-10">
+    L'IA construit l'architecture fonctionnelle à partir des exigences
+  </p>
+
+  <!-- Steps -->
+  <div class="w-full max-w-lg space-y-1">
+    <div *ngFor="let step of steps; let i = index; let last = last"
+         class="flex flex-col">
+
+      <div class="flex items-start gap-4">
+
+        <!-- Icône -->
+        <div class="flex-shrink-0 mt-0.5">
+          <!-- Done -->
+          <div *ngIf="step.status === 'done'"
+               class="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
+            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+
+          <!-- Loading -->
+          <div *ngIf="step.status === 'loading'"
+               class="w-7 h-7 rounded-full border-2 border-blue-500 border-t-transparent spinner">
+          </div>
+
+          <!-- Pending -->
+          <div *ngIf="step.status === 'pending'"
+               class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Texte -->
+        <div class="flex-1 pb-6">
+          <p class="text-sm font-medium"
+             [ngClass]="{
+               'text-green-700': step.status === 'done',
+               'text-blue-700': step.status === 'loading',
+               'text-gray-400': step.status === 'pending'
+             }">
+            {{ step.label }}
+          </p>
+          <p class="text-xs mt-0.5"
+             [ngClass]="{
+               'text-green-500': step.status === 'done',
+               'text-blue-500': step.status === 'loading',
+               'text-gray-300': step.status === 'pending'
+             }">
+            {{ step.description }}
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Ligne verticale entre steps -->
+      <div *ngIf="!last" class="ml-3.5 w-px h-4 -mt-5 mb-1"
+           [ngClass]="{
+             'bg-green-300': step.status === 'done',
+             'bg-gray-200': step.status !== 'done'
+           }">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="w-full max-w-lg mt-6">
+    <div class="flex justify-between text-xs text-gray-500 mb-2">
+      <span>Progression</span>
+      <span>{{ progress }}%</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-2">
+      <div class="bg-blue-600 h-2 rounded-full transition-all duration-500"
+           [style.width.%]="progress">
+      </div>
+    </div>
+  </div>
+
 </div>

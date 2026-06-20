@@ -16,7 +16,7 @@ import tempfile
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union, Any
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
@@ -44,7 +44,7 @@ class GenerateRequest(BaseModel):
     category: Optional[str] = "CdC"
     top_k: int = 8
     project_name: Optional[str] = None
-    project_id: Optional[str] = None
+    project_id: Optional[Union[str, int]] = None
     client: Optional[str] = None
     language: str = "Français"
     product_context: Optional[str] = None
@@ -59,12 +59,32 @@ class GenerateExigencesRequest(BaseModel):
 
 
 class TestGenerationRequest(BaseModel):
+    """Corps de requête pour générer des cas de test depuis une AFD."""
     afd_titre: str
     exigence_description: str = ""
     champs: str = ""
     regles: str = ""
     gaps: str = ""
     top_k: int = 4
+
+
+class AfdFromExigencesRequest(BaseModel):
+    """Corps de requête pour générer des AFDs depuis une liste d'exigences."""
+    exigences: list
+    project_name: str = ""
+    project_id: Optional[Union[str, int]] = None
+    code_projet: Optional[str] = None
+    client_name: str = ""
+    validateur: Optional[str] = None
+    product_name: str = "Smart Factory MOMsoft"
+    top_k: int = 4
+
+
+class EvaluateExigencesRequest(BaseModel):
+    """Corps de requête pour l'évaluation LLM-as-Judge des exigences."""
+    cdc_text: str
+    exigences: list
+    project_name: str = ""
 
 
 # ── Singleton pipeline ────────────────────────────────────────────────────────
@@ -238,7 +258,7 @@ def generate_exigences(request: GenerateExigencesRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/project/generate")
+@app.post("/api/project/generate")
 async def project_generate(
     file: UploadFile = File(...),
     project_name: str = Form(""),
@@ -273,14 +293,20 @@ async def project_generate(
         raise HTTPException(status_code=400, detail="Fichier trop volumineux (max 10 Mo)")
 
     # Sauvegarder dans src/document/CdC/
-    dest_dir = Path("src/document/CdC")
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    dest_path = dest_dir / file.filename
-    with open(dest_path, "wb") as f:
-        f.write(content)
+    try:
+        dest_dir = Path("src/document/CdC")
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest_path = dest_dir / file.filename
+        with open(dest_path, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur sauvegarde fichier: {e}")
 
     # Extraire le texte brut
     try:
+        _root = Path(__file__).resolve().parent.parent.parent
+        if str(_root) not in sys.path:
+            sys.path.insert(0, str(_root))
         from scripts.ingestion import lire_document, nettoyer_texte, indexer_document
         texte_brut, extraction_method, _ = lire_document(str(dest_path))
         texte_propre = nettoyer_texte(texte_brut) if texte_brut else ""
@@ -309,19 +335,27 @@ async def project_generate(
         )
         resp = result["response"]
         success = resp["success"] and resp["parsed_json"] is not None
-        error_msg = resp.get("error")
-        if not success and not error_msg:
-            if not resp["success"]:
+        raw_error = resp.get("error") or ""
+        if not success:
+            raw_lower = raw_error.lower()
+            if "quota" in raw_lower or "429" in raw_lower or "resourceexhausted" in raw_lower or "rate" in raw_lower:
+                error_msg = ("Quota API Gemini dépassé (5 req/min sur le plan gratuit). "
+                             "Attendez 60 secondes puis réessayez.")
+            elif raw_error:
+                error_msg = f"Erreur LLM : {raw_error[:300]}"
+            elif not resp["success"]:
                 error_msg = "Le modèle IA n'a pas pu générer de réponse."
             else:
                 preview = (resp.get("raw_text") or "")[:200]
-                error_msg = f"JSON introuvable dans la réponse du modèle. Aperçu: {preview}"
+                error_msg = f"JSON introuvable dans la réponse du modèle. Aperçu : {preview}"
+        else:
+            error_msg = None
         return {
             "success": success,
             "filename": file.filename,
             "chunks_added": chunks_added,
             "extracted_text_length": len(texte_propre),
-            "extracted_text": texte_propre,
+            "cdc_text_preview": texte_propre[:5000],  # pour /api/evaluate/exigences côté Angular
             "exigences": resp["parsed_json"],
             "raw_text": resp.get("raw_text") if not resp["parsed_json"] else None,
             "provider": resp["provider"],
@@ -329,6 +363,8 @@ async def project_generate(
             "pipeline_metadata": result["pipeline_metadata"],
         }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erreur génération: {e}")
 
 
@@ -372,153 +408,6 @@ def generate(request: GenerateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── LLM-as-a-Judge : client Groq séparé ──────────────────────────────────────
-
-_JUDGE_GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
-_JUDGE_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-
-def _get_judge_client():
-    if not _JUDGE_GROQ_API_KEY:
-        raise HTTPException(status_code=503, detail="GROQ_API_KEY non configurée — judge indisponible.")
-    try:
-        from groq import Groq
-        return Groq(api_key=_JUDGE_GROQ_API_KEY)
-    except ImportError:
-        raise HTTPException(status_code=503, detail="Package 'groq' non installé. Lance: pip install groq>=0.9.0")
-
-
-class EvaluationRequest(BaseModel):
-    cdc_text: str
-    guide_chunks: str
-    requirements: str
-
-
-_JUDGE_SYSTEM_PROMPT = """Tu es un évaluateur expert en spécification fonctionnelle industrielle.
-Tu travailles pour MOMsoft. Ton rôle est d'évaluer la qualité d'une liste d'exigences générées
-par un système RAG à partir d'un Cahier des Charges client et d'un Guide Smart Factory.
-
-Évalue selon ces critères (score 0-10 chacun) :
-- faithfulness        : les exigences sont fidèles au CdC (pas d'hallucinations)
-- answer_relevance    : les exigences répondent bien aux besoins exprimés dans le CdC
-- context_precision   : le Guide Smart Factory est bien utilisé pour les solutions proposées
-- solution_relevance  : les solutions MOMsoft proposées sont pertinentes et réalistes
-- completeness        : toutes les exigences importantes du CdC sont couvertes
-
-Retourne UNIQUEMENT ce JSON, sans texte avant ni après, sans bloc <think> :
-{
-  "faithfulness": 0,
-  "answer_relevance": 0,
-  "context_precision": 0,
-  "solution_relevance": 0,
-  "completeness": 0,
-  "overall_score": 0,
-  "issues": [],
-  "strengths": [],
-  "recommendation": ""
-}
-
-overall_score = moyenne arrondie des 5 critères.
-issues = liste de problèmes détectés (strings).
-strengths = liste de points forts (strings).
-recommendation = conseil d'amélioration en 1-2 phrases."""
-
-
-def _parse_judge_json(raw: str):
-    """Strip <think> blocks and markdown fences, then parse JSON."""
-    import re, json
-
-    # Remove <think>...</think>
-    text = re.sub(r"<think>[\s\S]*?</think>", "", raw).strip()
-    # Handle unclosed <think>
-    if "<think>" in text:
-        idx = text.rfind("</think>")
-        text = text[idx + 8:].strip() if idx != -1 else ""
-
-    # Markdown fence
-    fence = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", text)
-    if fence:
-        try:
-            return json.loads(fence.group(1).strip())
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-    # Brace extraction
-    start = text.find("{")
-    if start != -1:
-        depth, end = 0, -1
-        for i, ch in enumerate(text[start:], start):
-            if ch == "{":
-                depth += 1
-            elif ch == "}":
-                depth -= 1
-                if depth == 0:
-                    end = i + 1
-                    break
-        if end != -1:
-            try:
-                return json.loads(text[start:end])
-            except (json.JSONDecodeError, ValueError):
-                pass
-
-    # Direct parse
-    try:
-        return json.loads(text)
-    except (json.JSONDecodeError, ValueError):
-        return None
-
-
-@app.post("/evaluate/exigences")
-def evaluate_exigences(request: EvaluationRequest):
-    """Évalue la qualité des exigences générées via LLM-as-a-Judge (Groq qwen-qwq-32b).
-
-    Body JSON:
-    {
-        "cdc_text":      "Texte brut du cahier des charges",
-        "guide_chunks":  "Extraits pertinents du Guide Smart Factory",
-        "requirements":  "JSON ou texte des exigences à évaluer"
-    }
-
-    Returns:
-        Scores RAGAS-like + issues + strengths + recommendation
-    """
-    client = _get_judge_client()
-
-    user_message = (
-        f"=== CAHIER DES CHARGES CLIENT ===\n{request.cdc_text}\n\n"
-        f"=== GUIDE SMART FACTORY (extraits) ===\n{request.guide_chunks}\n\n"
-        f"=== EXIGENCES GÉNÉRÉES (à évaluer) ===\n{request.requirements}\n\n"
-        "Évalue ces exigences selon les critères demandés et retourne le JSON d'évaluation."
-    )
-
-    try:
-        completion = client.chat.completions.create(
-            model=_JUDGE_MODEL,
-            messages=[
-                {"role": "system", "content": _JUDGE_SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
-            max_tokens=2048,
-            temperature=0.1,
-        )
-        raw_text = completion.choices[0].message.content or ""
-        parsed = _parse_judge_json(raw_text)
-
-        if parsed is None:
-            return {
-                "success": False,
-                "model": _JUDGE_MODEL,
-                "error": "JSON d'évaluation introuvable dans la réponse du juge.",
-                "raw_text": raw_text[:500],
-            }
-
-        return {
-            "success": True,
-            "model": _JUDGE_MODEL,
-            "scores": parsed,
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur judge: {e}")
 @app.post("/generate/tests")
 async def generate_tests(request: TestGenerationRequest):
     """Génère des scénarios de test fonctionnels depuis une AFD.
@@ -570,6 +459,379 @@ async def generate_tests(request: TestGenerationRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ── Nouveaux endpoints ────────────────────────────────────────────────────────
+
+_VERIFY_SYSTEM = (
+    "Tu es un expert en gestion de projet industriel et informatique. "
+    "Analyse l'extrait de document fourni et détermine s'il s'agit d'un "
+    "Cahier des Charges (CDC).\n\n"
+    "Un CDC décrit les BESOINS et EXIGENCES d'un projet informatique ou industriel : "
+    "ce que le système doit faire, le périmètre fonctionnel, les contraintes, les livrables. "
+    "Un CDC peut être pour un usage interne (sans forcément mentionner 'appel d'offre' ou 'prestataire'). "
+    "Un CDC peut avoir une table des matières, une introduction, un résumé — cela ne le disqualifie pas.\n\n"
+    "NE SONT PAS des CDC : rapport de stage, mémoire universitaire, thèse, rapport de PFE, "
+    "rapport d'activité post-projet, compte-rendu de réunion, CV, facture, article scientifique, "
+    "manuel utilisateur d'un logiciel existant, rapport d'audit, bilan.\n\n"
+    "La différence clé : un CDC décrit ce qu'un système DOIT FAIRE (futur, besoins à satisfaire). "
+    "Un rapport décrit ce qui A ÉTÉ FAIT (passé, résultats obtenus).\n\n"
+    "Retourne UNIQUEMENT ce JSON, sans texte avant ni après :\n"
+    '{"document_type":"CDC|CV|RAPPORT|FACTURE|CONTRAT|AUTRE",'
+    '"is_cdc":true|false,"confidence":0-100,"reason":"explication courte en français (1 phrase)"}'
+)
+
+
+@app.post("/api/verify/document")
+async def verify_document(file: UploadFile = File(...)):
+    """Vérifie si le document uploadé est un Cahier des Charges en lisant son contenu.
+
+    Returns:
+        {is_valid, document_type, confidence, message}
+    """
+    allowed_ext = {".pdf", ".docx", ".txt"}
+    ext = Path(file.filename).suffix.lower()
+    if ext not in allowed_ext:
+        return {
+            "is_valid": False,
+            "document_type": "Format non supporté",
+            "confidence": 100,
+            "message": f"Extension {ext} non supportée. Acceptées : PDF, DOCX, TXT",
+        }
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        return {
+            "is_valid": False,
+            "document_type": "Fichier trop volumineux",
+            "confidence": 100,
+            "message": "Fichier trop volumineux (max 10 Mo)",
+        }
+
+    # Sauvegarder dans un fichier temporaire pour l'extraction texte
+    with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        _root = Path(__file__).resolve().parent.parent.parent
+        if str(_root) not in sys.path:
+            sys.path.insert(0, str(_root))
+        from scripts.ingestion import lire_document, nettoyer_texte
+        texte_brut, _, _ = lire_document(tmp_path)
+        texte = nettoyer_texte(texte_brut)[:5000] if texte_brut else ""
+    except Exception as e:
+        return {
+            "is_valid": False,
+            "document_type": "Erreur extraction",
+            "confidence": 0,
+            "message": f"Impossible d'extraire le texte : {e}",
+        }
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+    if not texte or len(texte.strip()) < 30:
+        return {
+            "is_valid": False,
+            "document_type": "Document vide",
+            "confidence": 90,
+            "message": "Le document semble vide ou illisible.",
+        }
+
+    # Étape 1 — pré-filtrage mots-clés évidents (pas de LLM pour CV / facture / rapport)
+    texte_low = texte.lower()
+    kw_cv = ["curriculum vitae", "expériences professionnelles", "né le", "poste recherché", "nationalité"]
+    kw_facture = ["facture n°", "numéro de facture", "montant ttc", "montant ht", "bulletin de salaire"]
+    # Marqueurs vraiment spécifiques aux rapports académiques/de stage (absents des CdC)
+    kw_rapport = [
+        "rapport de stage", "mémoire de fin d'études", "mémoire de master",
+        "mémoire de licence", "rapport de pfe", "rapport de fin d'études",
+        "encadrant pédagogique", "encadrant professionnel", "tuteur de stage",
+        "soutenu par", "présenté devant le jury", "année universitaire",
+        "stage de fin d'études", "stage effectué", "promotion 20",
+    ]
+    if sum(1 for k in kw_cv if k in texte_low) >= 2:
+        return {"is_valid": False, "document_type": "CV", "confidence": 92,
+                "message": "Ce document est un CV, pas un Cahier des Charges."}
+    if sum(1 for k in kw_facture if k in texte_low) >= 2:
+        return {"is_valid": False, "document_type": "FACTURE", "confidence": 92,
+                "message": "Ce document est une facture, pas un Cahier des Charges."}
+    if sum(1 for k in kw_rapport if k in texte_low) >= 2:
+        return {"is_valid": False, "document_type": "RAPPORT", "confidence": 92,
+                "message": "Ce document est un rapport/mémoire académique, pas un Cahier des Charges."}
+
+    # Étape 1b — "cahier des charges" dans le texte = CDC certain (phrase très spécifique)
+    if "cahier des charges" in texte_low or "cahier de charges" in texte_low:
+        return {
+            "is_valid": True,
+            "document_type": "CDC",
+            "confidence": 85,
+            "message": "Expression 'Cahier des Charges' détectée dans le document.",
+        }
+
+    # Étape 2 — classification LLM via Groq llama-4-scout (quota séparé de Gemini)
+    try:
+        from groq import Groq as _Groq
+        import json as _json, re as _re
+        groq_key = os.getenv("GROQ_API_KEY", "").strip()
+        if groq_key:
+            _gc = _Groq(api_key=groq_key)
+            _verify_models = [
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+                "llama-3.3-70b-versatile",
+                "llama3-70b-8192",
+            ]
+            raw = ""
+            for _vm in _verify_models:
+                try:
+                    completion = _gc.chat.completions.create(
+                        model=_vm,
+                        messages=[
+                            {"role": "system", "content": _VERIFY_SYSTEM},
+                            {"role": "user", "content": f"Document (extrait) :\n\n{texte[:4000]}"},
+                        ],
+                        max_tokens=128,
+                        temperature=0.0,
+                    )
+                    raw = completion.choices[0].message.content or ""
+                    break
+                except Exception as _ve:
+                    print(f"  [Verify] {_vm} indisponible : {_ve}")
+                    continue
+            fence = _re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", raw)
+            candidate = fence.group(1) if fence else raw
+            start = candidate.find("{")
+            end = candidate.rfind("}") + 1
+            parsed = _json.loads(candidate[start:end]) if start != -1 else {}
+            if "is_cdc" in parsed:
+                return {
+                    "is_valid": bool(parsed["is_cdc"]),
+                    "document_type": parsed.get("document_type", "AUTRE"),
+                    "confidence": int(parsed.get("confidence", 70)),
+                    "message": parsed.get("reason", ""),
+                }
+    except Exception:
+        pass  # fallback keyword si Groq indisponible
+
+    # Étape 3 — fallback mots-clés (si Groq indisponible)
+    # "cahier des charges" / "cahier de charges" seuls suffisent : phrase ultra-spécifique
+    if "cahier des charges" in texte_low or "cahier de charges" in texte_low:
+        return {
+            "is_valid": True,
+            "document_type": "CDC",
+            "confidence": 80,
+            "message": "Expression 'Cahier des Charges' détectée — document reconnu comme CDC.",
+        }
+
+    # Termes courants dans les CdC industriels internes (pas forcément "appel d'offre")
+    kw_cdc = [
+        "exigences fonctionnelles", "exigence fonctionnelle",
+        "exigences techniques", "exigence technique",
+        "besoins fonctionnels", "besoin fonctionnel",
+        "spécification fonctionnelle", "spécifications fonctionnelles",
+        "périmètre du projet", "périmètre fonctionnel",
+        "fonctions attendues", "fonctions principales",
+        "conditions de réception", "recette fonctionnelle",
+        "livrables", "livrable attendu",
+        "prestataire", "maître d'ouvrage",
+        "appel d'offre", "appel d'offres",
+        "réception des livrables",
+        "mode opératoire",
+    ]
+    score = sum(1 for k in kw_cdc if k in texte_low)
+    is_cdc = score >= 2
+    return {
+        "is_valid": is_cdc,
+        "document_type": "CDC" if is_cdc else "AUTRE",
+        "confidence": min(75, max(40, score * 12)),
+        "message": ("Cahier des Charges détecté (analyse hors-ligne)." if is_cdc
+                    else "Ce document ne ressemble pas à un Cahier des Charges."),
+    }
+
+
+@app.post("/api/generate/afd")
+async def generate_afd(request: AfdFromExigencesRequest):
+    """Génère des AFDs depuis une liste d'exigences.
+
+    Body JSON:
+    {
+        "exigences": [{id, type, intitule, description, solutionProposee, ...}],
+        "project_name": "...",
+        "project_id": "PRJ-001",
+        "code_projet": "FA-003",
+        "client_name": "...",
+        "validateur": "...",
+        "product_name": "Smart Factory MOMsoft",
+        "top_k": 4
+    }
+
+    Returns:
+        {success, afds, nb_afds, project_name, code_projet, client_name, validateur, provider, pipeline_metadata}
+    """
+    if not request.exigences:
+        raise HTTPException(status_code=400, detail="La liste d'exigences est vide")
+    if len(request.exigences) > 50:
+        raise HTTPException(status_code=400, detail="Maximum 50 exigences par appel")
+
+    try:
+        pipeline = get_pipeline()
+        result = pipeline.generate_afd_from_exigences(
+            exigences_list=request.exigences,
+            project_name=request.project_name,
+            client_name=request.client_name,
+            product_name=request.product_name,
+            top_k=request.top_k,
+        )
+        resp = result["response"]
+        parsed = resp["parsed_json"] or {}
+        afds = parsed.get("afds", [])
+        return {
+            "success": resp["success"] and bool(afds),
+            "afds": afds,
+            "nb_afds": len(afds),
+            "resume": parsed.get("resume", ""),
+            # Métadonnées projet — renvoyées telles quelles pour la table AFD
+            "project_name": request.project_name,
+            "project_id": request.project_id,
+            "code_projet": request.code_projet,
+            "client_name": request.client_name,
+            "validateur": request.validateur,
+            "provider": resp["provider"],
+            "error": resp.get("error") if not resp["success"] else None,
+            "raw_text": resp.get("raw_text") if not afds else None,
+            "pipeline_metadata": result["pipeline_metadata"],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur génération AFD: {e}")
+
+
+@app.post("/api/evaluate/exigences")
+async def evaluate_exigences(request: EvaluateExigencesRequest):
+    """Évalue la qualité des exigences générées par LLM-as-Judge (Groq llama-4-scout).
+
+    Body JSON:
+    {
+        "cdc_text": "...",
+        "exigences": [{id, type, intitule, description, ...}],
+        "project_name": ""
+    }
+
+    Returns:
+        {success, evaluation: {scores, score_global, points_forts, axes_amelioration, commentaire},
+         nb_exigences, model, provider}
+    """
+    if not request.exigences:
+        raise HTTPException(status_code=400, detail="Liste d'exigences vide")
+    if not request.cdc_text or len(request.cdc_text.strip()) < 30:
+        raise HTTPException(status_code=400, detail="cdc_text trop court (min 30 caractères)")
+
+    groq_key = os.getenv("GROQ_API_KEY", "").strip()
+    if not groq_key:
+        raise HTTPException(status_code=503, detail="GROQ_API_KEY manquante — évaluation indisponible")
+
+    try:
+        from src.generation.prompt_builder import PromptBuilder
+        import json as _json, re as _re
+
+        builder = PromptBuilder(generation_type="judge")
+        prompt = builder.build_judge(
+            cdc_text=request.cdc_text,
+            exigences_list=request.exigences,
+            project_name=request.project_name,
+        )
+
+        raw_text = ""
+        used_model = "unknown"
+        last_err = None
+
+        # Essai Groq (si le package est installé)
+        try:
+            from groq import Groq as _Groq
+            gc = _Groq(api_key=groq_key)
+            judge_models = [
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+                "llama-3.3-70b-versatile",
+                "llama3-70b-8192",
+            ]
+            used_model = judge_models[0]
+            for model_id in judge_models:
+                try:
+                    completion = gc.chat.completions.create(
+                        model=model_id,
+                        messages=[
+                            {"role": "system", "content": prompt["system"]},
+                            {"role": "user", "content": prompt["messages"][0]["content"]},
+                        ],
+                        max_tokens=1024,
+                        temperature=0.0,
+                    )
+                    raw_text = completion.choices[0].message.content or ""
+                    used_model = model_id
+                    print(f"  [Judge] Modèle Groq utilisé : {model_id}")
+                    break
+                except Exception as model_err:
+                    print(f"  [Judge] {model_id} indisponible : {model_err}")
+                    last_err = model_err
+                    continue
+        except ImportError:
+            print("  [Judge] Package 'groq' non installé — passage direct au fallback Gemini")
+        if not raw_text:
+            # Fallback : LLMClient (Gemini) si tous les modèles Groq sont indisponibles
+            try:
+                from src.generation.llm import LLMClient as _LLMClient
+                _llm = _LLMClient()
+                _resp = _llm.generate(prompt)
+                raw_text = _resp.get("raw_text", "")
+                used_model = _resp.get("model", "gemini")
+                if raw_text:
+                    print(f"  [Judge] Fallback LLMClient ({used_model}) : {len(raw_text)} chars")
+            except Exception as _fe:
+                print(f"  [Judge] Fallback LLMClient échoué : {_fe}")
+
+        if not raw_text:
+            err_detail = str(last_err) if last_err else "Aucun modèle LLM disponible"
+            raise HTTPException(status_code=503, detail=f"Évaluation indisponible (Groq + Gemini hors ligne) : {err_detail}")
+
+        # Parse JSON from LLM response
+        fence = _re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", raw_text)
+        candidate = fence.group(1) if fence else raw_text
+        start = candidate.find("{")
+        end = candidate.rfind("}") + 1
+        try:
+            evaluation = _json.loads(candidate[start:end]) if start != -1 else {}
+        except _json.JSONDecodeError:
+            evaluation = {}
+
+        # Compute score_global if missing
+        if "score_global" not in evaluation and "scores" in evaluation:
+            vals = list(evaluation["scores"].values())
+            evaluation["score_global"] = round(sum(vals) / len(vals)) if vals else 0
+
+        evaluation.setdefault("nb_exigences_evaluees", len(request.exigences))
+
+        # Scores aplatis pour facilité d'accès côté frontend
+        flat_scores = {
+            **(evaluation.get("scores") or {}),
+            "score_global": evaluation.get("score_global", 0),
+            "points_forts": evaluation.get("points_forts", []),
+            "axes_amelioration": evaluation.get("axes_amelioration", []),
+            "commentaire": evaluation.get("commentaire", ""),
+            "nb_exigences_evaluees": evaluation.get("nb_exigences_evaluees", len(request.exigences)),
+        }
+
+        return {
+            "success": True,
+            "scores": flat_scores,
+            "evaluation": evaluation,
+            "nb_exigences": len(request.exigences),
+            "model": used_model,
+            "provider": "gemini" if "gemini" in used_model else "groq",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur évaluation: {e}")
 
 
 # ── Point d'entrée direct ─────────────────────────────────────────────────────

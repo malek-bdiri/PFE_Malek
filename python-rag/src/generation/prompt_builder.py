@@ -72,7 +72,6 @@ Règles STRICTES :
 - Le type doit être exactement l'un de : "Fonctionnelle", "Non-fonctionnelle", "Sécurité", "Performance"
 - "solutionProposee" : module ou fonctionnalité MOMsoft Smart Factory (basé sur le GUIDE fourni)
 - "limitesHypotheses" : contraintes, hypothèses ou limites connues
-- Génère MAXIMUM 10 exigences (les plus importantes et représentatives du CdC)
 - Priorise les exigences fonctionnelles principales
 - Format de sortie : JSON UNIQUEMENT, sans texte avant ni après le JSON, sans bloc <think>
 - Langue : français professionnel
@@ -116,8 +115,77 @@ Format JSON attendu :
 
     "generic": """Tu es un assistant expert en gestion de projets industriels pour MOMsoft.
 Réponds de manière précise et professionnelle en français, en t'appuyant sur le contexte fourni.
-Si le contexte ne contient pas l'information demandée, indique-le clairement.""", 
-"testing": """Tu es un expert QA pour des projets industriels MOMsoft Smart Factory.
+Si le contexte ne contient pas l'information demandée, indique-le clairement.""",
+
+    "afd_from_exigences": """Tu es un expert en analyse fonctionnelle pour des projets industriels de digitalisation.
+Tu travailles pour MOMsoft, spécialisée dans les solutions MES/IoT industrielles Smart Factory.
+
+Ton rôle : à partir d'une liste d'exigences fournie, générer les Analyses Fonctionnelles Détaillées (AFD) correspondantes.
+
+Règles STRICTES :
+- Regroupe les exigences par cohérence fonctionnelle dans une même AFD (max 3-5 exigences par AFD)
+- Chaque exigence doit apparaître dans exactement UNE AFD (pas de doublon, pas d'oubli)
+- Les IDs AFD commencent à AFD-001 et sont séquentiels
+- Chaque AFD décrit clairement ce que l'utilisateur peut FAIRE dans le système
+- Les critères d'acceptation sont concrets, testables, et formulés en langage métier
+- Format de sortie : JSON UNIQUEMENT, sans texte avant ni après, sans bloc <think>
+- Langue : français professionnel
+
+Format JSON attendu :
+{
+  "afds": [
+    {
+      "id": "AFD-001",
+      "titre": "Titre fonctionnel clair (5-8 mots)",
+      "description": "Description de la fonctionnalité en 2-3 phrases techniques",
+      "exigences_couvertes": ["EX-001", "EX-002"],
+      "criteres_acceptation": [
+        "Critère 1 concret et testable",
+        "Critère 2 concret et testable"
+      ],
+      "acteurs": ["Opérateur", "Superviseur"],
+      "module_momsoft": "Module Smart Factory concerné"
+    }
+  ],
+  "nb_afds": 0,
+  "resume": "Synthèse du périmètre fonctionnel couvert par les AFDs"
+}""",
+
+    "judge": """Tu es un expert en qualité des spécifications fonctionnelles pour des projets industriels.
+Tu travailles en tant qu'évaluateur indépendant (LLM-as-Judge) pour MOMsoft.
+
+Ton rôle : évaluer la qualité des exigences générées par rapport au Cahier des Charges (CdC) original.
+
+Critères d'évaluation (chacun noté de 0 à 100) :
+1. couverture : Les exigences couvrent-elles tous les besoins exprimés dans le CdC ?
+2. completude : Aucune exigence importante n'est-elle manquante ?
+3. precision : Les exigences sont-elles suffisamment précises et non ambiguës ?
+4. pertinence : Les exigences sont-elles toutes justifiées par le CdC ?
+5. qualite_redactionnelle : Le niveau de langage et la structure sont-ils professionnels ?
+
+Règles :
+- Base-toi UNIQUEMENT sur le contenu des documents fournis
+- Sois rigoureux et objectif — ne surestime pas les scores
+- Le commentaire doit identifier 2-3 points forts et 2-3 axes d'amélioration concrets
+- Format de sortie : JSON UNIQUEMENT, sans texte avant ni après, sans bloc <think>
+
+Format JSON attendu :
+{
+  "scores": {
+    "couverture": 0,
+    "completude": 0,
+    "precision": 0,
+    "pertinence": 0,
+    "qualite_redactionnelle": 0
+  },
+  "score_global": 0,
+  "nb_exigences_evaluees": 0,
+  "points_forts": ["...", "...", "..."],
+  "axes_amelioration": ["...", "...", "..."],
+  "commentaire": "Analyse synthétique en 3-4 phrases"
+}""",
+
+    "testing": """Tu es un expert QA pour des projets industriels MOMsoft Smart Factory.
 
 À partir de l'AFD fournie, génère des scénarios de test fonctionnels adaptés au DOMAINE MÉTIER décrit.
 
@@ -171,8 +239,6 @@ FORMAT JSON OBLIGATOIRE :
     }
   ]
 }""",
-
-
 }
 
 
@@ -313,32 +379,47 @@ class PromptBuilder:
         regles: str = "",
         gaps: str = "",
     ) -> dict:
-        """Construit le prompt pour la génération de scénarios de test depuis une AFD.
+        """Construit le prompt pour la génération de cas de test depuis une AFD.
 
-        Sections :
-          === AFD À TESTER ===         (titre + description + champs + règles + gaps)
-          === EXEMPLES AFD SIMILAIRES === (chunks AFD récupérés par le retriever)
-          === DEMANDE ===
+        Sections dans le message utilisateur :
+          === EXEMPLES AFD SIMILAIRES ===   (chunks AFD issus du RAG)
+          === AFD À TESTER ===              (contenu structuré de l'AFD choisie)
+          === DEMANDE ===                   (instruction finale)
+
+        Args:
+            afd_titre:            Titre de l'AFD (ex: "AFD-003 - Gestion des machines")
+            afd_docs:             Chunks AFD similaires récupérés par le retriever
+            exigence_description: Description de l'exigence couverte par l'AFD
+            champs:               Champs du formulaire (ex: "Nom, Type, Site, Statut")
+            regles:               Règles de gestion (ex: "Nom unique, Statut actif par défaut")
+            gaps:                 GAPs ou contraintes identifiés
         """
-        # Section 1 : description de l'AFD à tester
-        afd_block_lines = [f"Titre AFD : {afd_titre}"]
-        if exigence_description:
-            afd_block_lines.append(f"Exigence liée : {exigence_description}")
-        if champs:
-            afd_block_lines.append(f"Champs de l'interface : {champs}")
-        if regles:
-            afd_block_lines.append(f"Règles de gestion : {regles}")
-        if gaps:
-            afd_block_lines.append(f"GAPs identifiés : {gaps}")
-        afd_block = "\n".join(afd_block_lines)
-
-        # Section 2 : exemples AFD similaires issus du RAG
+        # Section 1 : exemples AFD similaires du RAG
         exemples_block = self._build_context_block(afd_docs)
 
+        # Section 2 : contenu structuré de l'AFD à tester
+        afd_lines = [f"Titre AFD : {afd_titre}"]
+        if exigence_description:
+            afd_lines.append(f"Exigence couverte : {exigence_description}")
+        if champs:
+            afd_lines.append(f"Champs de l'interface : {champs}")
+        if regles:
+            afd_lines.append(f"Règles de gestion : {regles}")
+        if gaps:
+            afd_lines.append(f"GAPs / Contraintes : {gaps}")
+        afd_block = "\n".join(afd_lines)
+
         sections = [
+            f"=== EXEMPLES AFD SIMILAIRES ===\n{exemples_block}",
             f"=== AFD À TESTER ===\n{afd_block}",
-            f"=== EXEMPLES AFD SIMILAIRES (base de connaissance) ===\n{exemples_block}",
-            f"=== DEMANDE ===\nGénère tous les scénarios de test fonctionnels pour l'AFD : {afd_titre}",
+            (
+                "=== DEMANDE ===\n"
+                f"Génère TOUS les scénarios de test fonctionnels pour l'AFD : {afd_titre}.\n"
+                "Identifie les fonctions métier spécifiques décrites dans cette AFD (ex : collecte de données machines, "
+                "détection d'arrêts, ordres de fabrication, alertes qualité, supervision temps réel, etc.) "
+                "et génère des scénarios adaptés à ces fonctions — PAS du CRUD générique sauf si l'AFD décrit explicitement des opérations de gestion d'entités.\n"
+                "Réponds UNIQUEMENT en JSON selon le format demandé."
+            ),
         ]
 
         user_message = "\n\n".join(sections)
@@ -352,6 +433,119 @@ class PromptBuilder:
                 "afd_docs_count": len(afd_docs),
                 "afd_block_chars": len(afd_block),
                 "exemples_chars": len(exemples_block),
+            },
+        }
+
+    def build_afd_from_exigences(
+        self,
+        exigences_list: list,
+        docs_afd: list,
+        project_name: str = "",
+        client_name: str = "",
+        product_name: str = "Smart Factory MOMsoft",
+    ) -> dict:
+        """Construit le prompt pour générer des AFDs depuis une liste d'exigences.
+
+        Args:
+            exigences_list: Liste de dicts exigences (id, type, intitule, description, ...)
+            docs_afd:       Chunks AFD similaires récupérés par le retriever
+            project_name:   Nom du projet
+            client_name:    Nom du client
+            product_name:   Produit MOMsoft
+        """
+        exemples_block = self._build_context_block(docs_afd)
+
+        exig_lines = []
+        for ex in exigences_list:
+            ex_id = ex.get("id", "?")
+            intitule = ex.get("intitule", "")
+            description = ex.get("description", "")
+            ex_type = ex.get("type", "Fonctionnelle")
+            exig_lines.append(f"- {ex_id} [{ex_type}] : {intitule}\n  {description}")
+        exigences_block = "\n".join(exig_lines)
+
+        sections = []
+        if project_name or client_name:
+            meta = []
+            if project_name:
+                meta.append(f"Projet : {project_name}")
+            if client_name:
+                meta.append(f"Client : {client_name}")
+            meta.append(f"Produit : {product_name}")
+            sections.append("=== CONTEXTE PROJET ===\n" + "\n".join(meta))
+
+        sections.append(f"=== EXEMPLES AFD SIMILAIRES (base de connaissances) ===\n{exemples_block}")
+        sections.append(f"=== LISTE DES EXIGENCES À COUVRIR ({len(exigences_list)}) ===\n{exigences_block}")
+        sections.append(
+            "=== DEMANDE ===\n"
+            "Génère les Analyses Fonctionnelles Détaillées (AFDs) pour TOUTES les exigences listées.\n"
+            "Regroupe les exigences fonctionnellement cohérentes dans une même AFD.\n"
+            "Chaque exigence doit figurer dans exactement une AFD.\n"
+            "Réponds UNIQUEMENT en JSON selon le format demandé."
+        )
+
+        user_message = "\n\n".join(sections)
+
+        return {
+            "system": SYSTEM_PROMPTS["afd_from_exigences"],
+            "messages": [{"role": "user", "content": user_message}],
+            "debug_info": {
+                "generation_type": "afd_from_exigences",
+                "nb_exigences": len(exigences_list),
+                "exigences_block_chars": len(exigences_block),
+                "exemples_chars": len(exemples_block),
+            },
+        }
+
+    def build_judge(
+        self,
+        cdc_text: str,
+        exigences_list: list,
+        project_name: str = "",
+    ) -> dict:
+        """Construit le prompt d'évaluation LLM-as-Judge.
+
+        Args:
+            cdc_text:       Texte brut du CdC original (tronqué à 4000 chars)
+            exigences_list: Liste de dicts exigences générées
+            project_name:   Nom du projet (optionnel)
+        """
+        exig_lines = []
+        for ex in exigences_list:
+            ex_id = ex.get("id", "?")
+            intitule = ex.get("intitule", "")
+            description = ex.get("description", "")
+            ex_type = ex.get("type", "Fonctionnelle")
+            sol = ex.get("solutionProposee", "")
+            exig_lines.append(
+                f"- {ex_id} [{ex_type}] : {intitule}\n"
+                f"  Description : {description}\n"
+                f"  Solution proposée : {sol}"
+            )
+        exigences_block = "\n".join(exig_lines)
+
+        cdc_block = cdc_text[:4000] if len(cdc_text) > 4000 else cdc_text
+
+        sections = []
+        if project_name:
+            sections.append(f"=== CONTEXTE ===\nProjet : {project_name}")
+        sections.append(f"=== CAHIER DES CHARGES (extrait) ===\n{cdc_block}")
+        sections.append(f"=== EXIGENCES GÉNÉRÉES ({len(exigences_list)}) ===\n{exigences_block}")
+        sections.append(
+            "=== DEMANDE ===\n"
+            "Évalue la qualité des exigences générées par rapport au Cahier des Charges.\n"
+            "Réponds UNIQUEMENT en JSON selon le format demandé."
+        )
+
+        user_message = "\n\n".join(sections)
+
+        return {
+            "system": SYSTEM_PROMPTS["judge"],
+            "messages": [{"role": "user", "content": user_message}],
+            "debug_info": {
+                "generation_type": "judge",
+                "nb_exigences": len(exigences_list),
+                "cdc_chars": len(cdc_block),
             },
         }
 
