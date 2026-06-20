@@ -62,6 +62,17 @@ public class ProjetController {
             @RequestBody List<Exigence> exigences) {
         return ResponseEntity.ok(projetService.addExigencesBulk(id, exigences));
     }
+
+    /**
+     * Remplacement complet de la liste d'exigences (validation, modif, suppression).
+     * PATCH /api/projets/{id}/exigences
+     */
+    @PatchMapping("/{id}/exigences")
+    public ResponseEntity<Projet> replaceExigences(
+            @PathVariable Long id,
+            @RequestBody List<Exigence> exigences) {
+        return ResponseEntity.ok(projetService.replaceExigences(id, exigences));
+    }
 //    @PutMapping("/{id}/exigences/{exigenceId}")
 //    public ResponseEntity<Projet> updateExigence(
 //            @PathVariable Long id,

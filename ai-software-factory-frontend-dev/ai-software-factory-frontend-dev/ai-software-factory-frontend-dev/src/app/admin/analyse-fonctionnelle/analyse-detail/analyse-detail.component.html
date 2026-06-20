@@ -1,4 +1,1111 @@
-<div class="p-6">
-  <h1 class="text-2xl font-bold text-gray-800 mb-4">Détail Analyse #{{ analyseId }}</h1>
-  <button (click)="back()" class="text-sm text-gray-500 hover:underline">← Retour</button>
+<!-- Erreur de chargement -->
+<div *ngIf="loadError" class="flex flex-col items-center justify-center py-20 text-center">
+  <svg class="w-12 h-12 text-red-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+  </svg>
+  <p class="text-gray-500 text-sm mb-4">{{ loadError }}</p>
+  <button (click)="goBack()" class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-700">
+    ← Retour à la liste
+  </button>
+</div>
+
+<!-- Chargement initial -->
+<div *ngIf="!analysis && !loadError" class="flex items-center justify-center py-20">
+  <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+</div>
+
+<div *ngIf="analysis">
+
+  <!-- Breadcrumb -->
+  <div class="text-sm text-gray-500 mb-4">
+    <span routerLink="/admin/dashboard" class="cursor-pointer hover:text-gray-700">Tableau de bord</span>
+    <span class="mx-2">›</span>
+    <span routerLink="/admin/analyse" class="cursor-pointer hover:text-gray-700">Analyse fonctionnelle</span>
+    <span class="mx-2">›</span>
+    <span class="text-gray-900 font-medium">{{ analysis.code }}</span>
+  </div>
+
+  <!-- Header -->
+  <div class="flex items-start justify-between mb-2">
+    <div class="flex items-center gap-4">
+      <button (click)="goBack()"
+              class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600">
+        ←
+      </button>
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold text-gray-900">{{ analysis.code }}</h1>
+          <span class="px-2 py-1 rounded text-xs font-medium"
+                [ngClass]="getStatutClass(analysis.statut || '')">
+            {{ analysis.statut }}
+          </span>
+        </div>
+        <p class="text-sm font-medium text-gray-700 mt-1">{{ analysis.projet?.nom }}</p>
+        <div class="flex items-center gap-2 text-xs text-gray-400 mt-1">
+          <span>{{ analysis.projet?.codeProjet }}</span>
+          <span>•</span>
+          <span>{{ analysis.projet?.client }}</span>
+          <span>•</span>
+          <span>{{ analysis.date | date:'yyyy-MM-dd' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions header -->
+    <div class="flex items-center gap-3">
+
+      <!-- Évaluer la qualité -->
+      <button (click)="evaluerExigences()" [disabled]="evaluating || !projetExigences.length"
+              class="flex items-center gap-2 px-4 py-2 border border-purple-400 text-purple-600 rounded-lg text-sm hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed">
+        <svg *ngIf="evaluating" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <svg *ngIf="!evaluating" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        {{ evaluating ? 'Évaluation...' : 'Évaluer la qualité' }}
+      </button>
+
+      <!-- Générer AFDs par IA -->
+      <button (click)="genererAiAfds()" [disabled]="generatingAiAfds || !projetExigences.length"
+              class="flex items-center gap-2 px-4 py-2 border border-blue-400 text-blue-600 rounded-lg text-sm hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed">
+        <svg *ngIf="generatingAiAfds" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <svg *ngIf="!generatingAiAfds" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        {{ generatingAiAfds ? 'Génération...' : 'Générer AFDs IA' }}
+      </button>
+
+      <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Modifier
+      </button>
+      <button (click)="validerAnalysis()"
+              [disabled]="analysis.statut === 'Validé'"
+              class="flex items-center gap-2 px-4 py-2 border border-green-500 text-green-600 rounded-lg text-sm hover:bg-green-50 disabled:opacity-50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Valider
+      </button>
+      <button (click)="exportAllAfdsPdf()"
+              [disabled]="afds.length === 0"
+              class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Exporter toutes les AFDs en PDF">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Exporter PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-0 border-b border-gray-200 mb-6 mt-6">
+    <button (click)="activeTab = 'architecture'"
+            [class.border-b-2]="activeTab === 'architecture'"
+            [class.border-blue-600]="activeTab === 'architecture'"
+            [class.text-blue-600]="activeTab === 'architecture'"
+            [class.text-gray-500]="activeTab !== 'architecture'"
+            class="px-6 py-3 text-sm font-medium">
+      Architecture fonctionnelle
+    </button>
+    <button (click)="activeTab = 'afd'"
+            [class.border-b-2]="activeTab === 'afd'"
+            [class.border-blue-600]="activeTab === 'afd'"
+            [class.text-blue-600]="activeTab === 'afd'"
+            [class.text-gray-500]="activeTab !== 'afd'"
+            class="px-6 py-3 text-sm font-medium">
+      AFD
+    </button>
+    <button (click)="activeTab = 'tracabilite'"
+            [class.border-b-2]="activeTab === 'tracabilite'"
+            [class.border-blue-600]="activeTab === 'tracabilite'"
+            [class.text-blue-600]="activeTab === 'tracabilite'"
+            [class.text-gray-500]="activeTab !== 'tracabilite'"
+            class="px-6 py-3 text-sm font-medium">
+      Traçabilité
+    </button>
+  </div>
+
+  <!-- ========== ARCHITECTURE FONCTIONNELLE ========== -->
+  <div *ngIf="activeTab === 'architecture'">
+
+    <div class="flex justify-between items-center mb-5">
+      <p class="text-sm text-gray-600">
+        {{ blocks.length }} bloc(s) fonctionnel(s) identifié(s)
+      </p>
+      <button (click)="openNewBlockModal()"
+              class="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-700">
+        + Nouveau bloc
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="text-center py-20 text-gray-400">
+      Chargement...
+    </div>
+
+    <!-- Blocks grid -->
+    <div *ngIf="!loading" class="grid grid-cols-3 gap-5">
+      <div *ngFor="let block of blocks; let i = index"
+           class="rounded-xl border-2 p-5 flex flex-col"
+           [ngClass]="colorClasses[block.couleur] || 'bg-gray-50 border-gray-200'">
+
+        <!-- Code -->
+        <div class="flex justify-between items-center mb-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+               [ngClass]="iconColorClasses[block.couleur] || 'text-gray-500'">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+          </div>
+          <span class="text-xs font-mono text-gray-400">{{ block.code }}</span>
+        </div>
+
+        <!-- Nom -->
+        <h3 class="font-semibold mb-2 text-sm"
+            [ngClass]="titleColorClasses[block.couleur] || 'text-gray-800'">
+          {{ block.nom }}
+        </h3>
+
+        <!-- Description -->
+        <p class="text-xs text-gray-600 mb-4 flex-1">{{ block.description }}</p>
+
+        <!-- Exigences -->
+        <div class="mb-4">
+          <p class="text-xs text-gray-500 mb-2">Exigences associées :</p>
+          <div class="flex flex-wrap gap-1">
+            <span *ngFor="let req of block.exigences"
+                  class="px-2 py-0.5 rounded text-xs font-mono font-medium"
+                  [ngClass]="badgeClasses[block.couleur] || 'bg-gray-100 text-gray-600'">
+              {{ req }}
+            </span>
+            <span *ngIf="!block.exigences || block.exigences.length === 0"
+                  class="text-xs text-gray-400 italic">Aucune</span>
+          </div>
+        </div>
+
+        <!-- Actions bloc -->
+        <div class="flex justify-between items-center pt-3 border-t border-gray-200">
+          <button class="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            Voir les détails
+          </button>
+          <div class="flex gap-2">
+            <button (click)="openEditModal(block)"
+                    class="text-gray-400 hover:text-blue-500">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+            </button>
+            <button (click)="deleteBlock(block, i)"
+                    class="text-gray-400 hover:text-red-500">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!loading && blocks.length === 0"
+         class="text-center py-20 text-gray-400">
+      <p class="text-sm">Aucun bloc fonctionnel. Cliquez sur "+ Nouveau bloc" pour commencer.</p>
+    </div>
+
+  </div>
+
+  <!-- ========== AFD ========== -->
+<div *ngIf="activeTab === 'afd'">
+
+  <div class="flex justify-between items-center mb-5">
+    <p class="text-sm text-gray-600">{{ afds.length }} AFD créée(s)</p>
+    <div class="flex gap-3">
+      <button class="flex items-center gap-2 px-4 py-2 border border-blue-500 text-blue-600 rounded-lg text-sm hover:bg-blue-50">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+</svg> Générer les AFD
+      </button>
+      <button (click)="openNewAfdModal()"
+              class="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-700">
+        + Nouvelle AFD
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Blocs fonctionnels (filtre) ── -->
+  <div *ngIf="blocks.length > 0" class="mb-6">
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Blocs fonctionnels identifiés</p>
+      <button *ngIf="activeBlockFilter !== null"
+              (click)="activeBlockFilter = null"
+              class="text-xs text-blue-600 hover:text-blue-800 underline">
+        Afficher tout
+      </button>
+    </div>
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
+      <div *ngFor="let block of blocks; let i = index"
+           (click)="toggleBlockFilter(block.id)"
+           class="rounded-xl border-2 p-4 flex flex-col cursor-pointer transition-all duration-150"
+           [ngClass]="[
+             colorClasses[block.couleur] || 'bg-gray-50 border-gray-200',
+             activeBlockFilter === block.id ? 'ring-2 ring-offset-1 ring-blue-500 shadow-md' : 'hover:shadow-sm'
+           ]">
+
+        <!-- Code + badge AFD count -->
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-mono text-gray-400">{{ block.code }}</span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                [ngClass]="badgeClasses[block.couleur] || 'bg-gray-100 text-gray-600'">
+            {{ afdCountForBlock(block.id) }} AFD
+          </span>
+        </div>
+
+        <!-- Nom -->
+        <h3 class="text-sm font-semibold mb-1 leading-tight"
+            [ngClass]="titleColorClasses[block.couleur] || 'text-gray-800'">
+          {{ block.nom }}
+        </h3>
+
+        <!-- Description -->
+        <p class="text-xs text-gray-600 mb-3 flex-1 line-clamp-3">{{ block.description }}</p>
+
+        <!-- Exigences associées -->
+        <div>
+          <p class="text-xs text-gray-400 mb-1">Exigences associées :</p>
+          <div class="flex flex-wrap gap-1">
+            <span *ngFor="let req of block.exigences | slice:0:4"
+                  class="px-1.5 py-0.5 rounded text-xs font-mono font-medium"
+                  [ngClass]="badgeClasses[block.couleur] || 'bg-gray-100 text-gray-600'">
+              {{ req }}
+            </span>
+            <span *ngIf="(block.exigences?.length || 0) > 4"
+                  class="text-xs text-gray-400">+{{ block.exigences.length - 4 }}</span>
+          </div>
+        </div>
+
+        <!-- "Voir les détails" -->
+        <div class="mt-3 pt-2 border-t border-gray-200">
+          <span class="flex items-center gap-1 text-xs text-gray-500">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            {{ activeBlockFilter === block.id ? 'Filtré' : 'Voir les détails' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicateur filtre actif -->
+    <div *ngIf="activeBlockFilter !== null" class="mt-3 flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+      </svg>
+      Filtre actif — {{ filteredAfds.length }} AFD(s) pour le bloc
+      <strong>{{ blockName(activeBlockFilter) }}</strong>
+      <button (click)="activeBlockFilter = null" class="ml-auto text-xs underline">Effacer</button>
+    </div>
+  </div>
+
+  <!-- Table AFD -->
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+        <tr>
+          <th class="px-5 py-3 text-left">ID AFD</th>
+          <th class="px-5 py-3 text-left">Intitulé</th>
+          <th class="px-5 py-3 text-left">Bloc fonctionnel</th>
+          <th class="px-5 py-3 text-left">Statut</th>
+          <th class="px-5 py-3 text-left">Validateur</th>
+          <th class="px-5 py-3 text-left">Dernière MAJ</th>
+          <th class="px-5 py-3 text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+
+        <tr *ngIf="filteredAfds.length === 0">
+          <td colspan="7" class="px-5 py-10 text-center text-gray-400 text-sm">
+            {{ activeBlockFilter !== null ? 'Aucune AFD pour ce bloc' : 'Aucune AFD créée' }}
+          </td>
+        </tr>
+
+        <tr *ngFor="let afd of filteredAfds" class="hover:bg-gray-50">
+          <td class="px-5 py-4">
+            <span class="font-mono text-sm font-medium text-gray-700">
+              {{ afd.code }}
+            </span>
+          </td>
+          <td class="px-5 py-4 font-medium text-gray-900">
+            {{ afd.intitule }}
+          </td>
+          <td class="px-5 py-4">
+            <div *ngIf="afd.block" class="text-gray-700">
+              {{ afd.block?.nom }}
+              <span class="text-xs text-gray-400 block">{{ afd.block?.code }}</span>
+            </div>
+            <span *ngIf="!afd.block" class="text-gray-400">-</span>
+          </td>
+          <td class="px-5 py-4">
+            <span class="px-2 py-1 rounded text-xs font-medium"
+                  [ngClass]="getAfdStatutClass(afd.statut)">
+              {{ afd.statut }}
+            </span>
+          </td>
+          <td class="px-5 py-4 text-gray-600">
+            {{ afd.validateur || '-' }}
+          </td>
+          <td class="px-5 py-4 text-gray-500">
+            {{ afd.derniereMaj | date:'yyyy-MM-dd' }}
+          </td>
+          <td class="px-5 py-4">
+  <div class="flex gap-3">
+    <button (click)="viewAfd(afd)"
+            class="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+      </svg>
+      Voir
+    </button>
+<button (click)="exportSingleAfdPdf(afd)"
+        title="Exporter en PDF"
+        class="text-gray-400 hover:text-red-500">
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+  </svg>
+</button>
+    <!-- 👇 Bouton Modifier -->
+    <button (click)="openEditAfdModal(afd)"
+            class="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+      </svg>
+      Modifier
+    </button>
+    <!-- ADD after the Modifier button in the AFD table -->
+<button (click)="openValidateAfdModal(afd)"
+        [disabled]="afd.statut === 'Validé'"
+        class="flex items-center gap-1 text-sm text-green-600 hover:text-green-800 disabled:opacity-40 disabled:cursor-not-allowed">
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+  </svg>
+  Valider
+</button>
+
+    <button (click)="deleteAfd(afd.id)"
+            class="text-gray-400 hover:text-red-500">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>
+    </button>
+  </div>
+</td>
+             
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+  <!-- ========== TRACABILITE ========== -->
+  <div *ngIf="activeTab === 'tracabilite'">
+    <div class="text-center py-20 text-gray-400">
+      <p class="text-sm">Onglet Traçabilité — à venir</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== MODAL NOUVEAU BLOC ========== -->
+<div *ngIf="showNewBlockModal"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white w-[500px] max-h-[85vh] overflow-y-auto rounded-2xl p-6 shadow-xl space-y-5">
+
+    <div class="flex justify-between items-center">
+      <div>
+        <h2 class="text-lg font-semibold">Nouveau bloc fonctionnel</h2>
+        <p class="text-sm text-gray-500">Créez un nouveau bloc pour structurer votre architecture fonctionnelle</p>
+      </div>
+      <button (click)="showNewBlockModal = false" class="text-gray-400 hover:text-gray-600">✕</button>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Nom du bloc <span class="text-red-500">*</span></label>
+      <input type="text" [(ngModel)]="newBlock.nom"
+             placeholder="Ex: Gestion des utilisateurs"
+             class="w-full border rounded-lg p-2.5 text-sm">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Description</label>
+      <textarea [(ngModel)]="newBlock.description" rows="3"
+                placeholder="Décrivez la fonction de ce bloc..."
+                class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-2">Exigences associées</label>
+      <div class="flex flex-wrap gap-2 mb-3">
+        <span *ngFor="let req of newBlock.exigences; let i = index"
+              class="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-mono">
+          {{ req }}
+          <button (click)="removeExigenceFromNew(i)" class="hover:text-red-500">✕</button>
+        </span>
+      </div>
+      <div class="flex gap-2">
+        <input type="text" [(ngModel)]="newExigence"
+               placeholder="Ex: REQ-001"
+               (keyup.enter)="addExigenceToNew()"
+               class="flex-1 border rounded-lg p-2 text-sm">
+        <button (click)="addExigenceToNew()"
+                class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm">
+          Ajouter
+        </button>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 pt-2">
+      <button (click)="showNewBlockModal = false"
+              class="px-4 py-2 border rounded-lg text-sm">Annuler</button>
+      <button (click)="saveNewBlock()"
+              [disabled]="!newBlock.nom.trim()"
+              class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm disabled:opacity-50">
+        + Créer le bloc
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== MODAL MODIFIER BLOC ========== -->
+<div *ngIf="showEditModal"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white w-[500px] max-h-[85vh] overflow-y-auto rounded-2xl p-6 shadow-xl space-y-5">
+
+    <div class="flex justify-between items-center">
+      <h2 class="text-lg font-semibold">Modifier le bloc</h2>
+      <button (click)="showEditModal = false" class="text-gray-400 hover:text-gray-600">✕</button>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Nom du bloc</label>
+      <input type="text" [(ngModel)]="editingBlock!.nom"
+             class="w-full border rounded-lg p-2.5 text-sm">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Description</label>
+      <textarea [(ngModel)]="editingBlock!.description" rows="3"
+                class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-2">Exigences associées</label>
+      <div class="flex flex-wrap gap-2 mb-3">
+        <span *ngFor="let req of editingBlock!.exigences; let i = index"
+              class="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-mono">
+          {{ req }}
+          <button (click)="removeExigenceFromEdit(i)" class="hover:text-red-500">✕</button>
+        </span>
+      </div>
+      <div class="flex gap-2">
+        <input type="text" [(ngModel)]="editExigence"
+               placeholder="Ex: REQ-001"
+               (keyup.enter)="addExigenceToEdit()"
+               class="flex-1 border rounded-lg p-2 text-sm">
+        <button (click)="addExigenceToEdit()"
+                class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm">
+          Ajouter
+        </button>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 pt-2">
+      <button (click)="showEditModal = false"
+              class="px-4 py-2 border rounded-lg text-sm">Annuler</button>
+      <button (click)="saveEditBlock()"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">
+        Enregistrer
+      </button>
+    </div>
+
+  </div>
+  </div>
+  <!-- ========== MODAL NOUVELLE AFD ========== -->
+<div *ngIf="showNewAfdModal"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl">
+
+    <!-- Header -->
+    <div class="flex justify-between items-start p-6 border-b">
+      <div>
+        <h2 class="text-lg font-semibold">Nouvelle AFD</h2>
+        <p class="text-sm text-gray-500 mt-1">Créez une nouvelle analyse fonctionnelle détaillée</p>
+      </div>
+      <button (click)="showNewAfdModal = false" class="text-gray-400 hover:text-gray-600">✕</button>
+    </div>
+
+    <div class="p-6 space-y-5">
+
+      <!-- Bloc fonctionnel -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Bloc fonctionnel <span class="text-red-500">*</span></label>
+        <select [(ngModel)]="selectedBlockId"
+                class="w-full border rounded-lg p-2.5 text-sm">
+          <option [ngValue]="null">Sélectionner un bloc...</option>
+          <option *ngFor="let b of blocks" [ngValue]="b.id">
+            {{ b.nom }} ({{ b.code }})
+          </option>
+        </select>
+      </div>
+
+      <!-- Intitulé -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Intitulé <span class="text-red-500">*</span></label>
+        <input type="text" [(ngModel)]="newAfd.intitule"
+               placeholder="Ex: Authentification par SSO"
+               class="w-full border rounded-lg p-2.5 text-sm">
+      </div>
+
+      <!-- Objectif -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Objectif</label>
+        <textarea [(ngModel)]="newAfd.objectif" rows="2"
+                  placeholder="Décrivez l'objectif de cette AFD..."
+                  class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Description</label>
+        <textarea [(ngModel)]="newAfd.description" rows="3"
+                  placeholder="Décrivez en détail cette fonctionnalité..."
+                  class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+      </div>
+
+      <!-- Règles de gestion -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Règles de gestion</label>
+        <textarea [(ngModel)]="newAfd.reglesGestion" rows="2"
+                  placeholder="Une règle par ligne..."
+                  class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+      </div>
+
+      <!-- Flux nominal -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Flux nominal</label>
+        <textarea [(ngModel)]="newAfd.fluxNominal" rows="2"
+                  placeholder="Décrivez le flux nominal étape par étape..."
+                  class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+      </div>
+
+      <!-- Cas alternatifs -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Cas alternatifs / erreurs</label>
+        <textarea [(ngModel)]="newAfd.casAlternatifs" rows="2"
+                  placeholder="Décrivez les cas alternatifs..."
+                  class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+      </div>
+
+      <!-- Statut + Validateur -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Statut</label>
+          <select [(ngModel)]="newAfd.statut"
+                  class="w-full border rounded-lg p-2.5 text-sm">
+            <option>En cours</option>
+            <option>Validé</option>
+            <option>En attente</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Validateur</label>
+          <input type="text" [(ngModel)]="newAfd.validateur"
+                 placeholder="Nom du validateur"
+                 class="w-full border rounded-lg p-2.5 text-sm">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-end gap-3 p-6 border-t">
+      <button (click)="showNewAfdModal = false"
+              class="px-4 py-2 border rounded-lg text-sm">Annuler</button>
+      <button (click)="saveNewAfd()"
+              [disabled]="!newAfd.intitule.trim()"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+        Créer l'AFD
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== MODAL VOIR AFD ========== -->
+<div *ngIf="showViewAfdModal && selectedAfd"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl">
+
+    <div class="flex justify-between items-start p-6 border-b">
+      <div>
+        <div class="flex items-center gap-3">
+          <h2 class="text-lg font-semibold">{{ selectedAfd.code }}</h2>
+          <span class="px-2 py-1 rounded text-xs font-medium"
+                [ngClass]="getAfdStatutClass(selectedAfd.statut)">
+            {{ selectedAfd.statut }}
+          </span>
+        </div>
+        <p class="text-sm text-gray-500 mt-1">{{ selectedAfd.intitule }}</p>
+      </div>
+      <button (click)="showViewAfdModal = false" class="text-gray-400 hover:text-gray-600">✕</button>
+    </div>
+
+    <div class="p-6 space-y-4">
+
+      <div *ngIf="selectedAfd.objectif">
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Objectif</p>
+        <p class="text-sm text-gray-700">{{ selectedAfd.objectif }}</p>
+      </div>
+
+      <div *ngIf="selectedAfd.description">
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Description</p>
+        <p class="text-sm text-gray-700">{{ selectedAfd.description }}</p>
+      </div>
+
+      <div *ngIf="selectedAfd.reglesGestion">
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Règles de gestion</p>
+        <p class="text-sm text-gray-700 whitespace-pre-line">{{ selectedAfd.reglesGestion }}</p>
+      </div>
+
+      <div *ngIf="selectedAfd.fluxNominal">
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Flux nominal</p>
+        <p class="text-sm text-gray-700 whitespace-pre-line">{{ selectedAfd.fluxNominal }}</p>
+      </div>
+
+      <div *ngIf="selectedAfd.casAlternatifs">
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Cas alternatifs / erreurs</p>
+        <p class="text-sm text-gray-700 whitespace-pre-line">{{ selectedAfd.casAlternatifs }}</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 pt-3 border-t">
+        <div>
+          <p class="text-xs text-gray-500">Validateur</p>
+          <p class="text-sm font-medium">{{ selectedAfd.validateur || '-' }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500">Dernière MAJ</p>
+          <p class="text-sm font-medium">{{ selectedAfd.derniereMaj | date:'yyyy-MM-dd' }}</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="flex justify-end p-6 border-t">
+      <button (click)="showViewAfdModal = false"
+              class="px-4 py-2 border rounded-lg text-sm">Fermer</button>
+    </div>
+
+  </div>
+</div>
+<!-- ========== MODAL MODIFIER AFD ========== -->
+<div *ngIf="showEditAfdModal && editingAfd"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl">
+
+    <div class="flex justify-between items-start p-6 border-b">
+      <div>
+        <h2 class="text-lg font-semibold">Modifier l'AFD</h2>
+        <p class="text-sm text-gray-500 mt-1">{{ editingAfd.code }} — {{ editingAfd.intitule }}</p>
+      </div>
+      <button (click)="showEditAfdModal = false" class="text-gray-400 hover:text-gray-600">✕</button>
+    </div>
+
+    <div class="p-6 space-y-5">
+
+      <!-- Intitulé -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Intitulé <span class="text-red-500">*</span></label>
+        <input type="text" [(ngModel)]="editingAfd.intitule"
+               class="w-full border rounded-lg p-2.5 text-sm">
+      </div>
+
+      <!-- Complexité fonctionnelle -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Complexité fonctionnelle</label>
+        <select [(ngModel)]="editingAfd.complexiteFonctionnelle"
+                class="w-full border rounded-lg p-2.5 text-sm">
+          <option value="">-- Sélectionner --</option>
+          <option value="Faible">Faible</option>
+          <option value="Moyenne">Moyenne</option>
+          <option value="Élevée">Élevée</option>
+        </select>
+      </div>
+
+      <!-- Objectif -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Objectif</label>
+        <textarea [(ngModel)]="editingAfd.objectif" rows="2"
+                  class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Description</label>
+        <textarea [(ngModel)]="editingAfd.description" rows="3"
+                  class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+      </div>
+
+      <!-- Règles de gestion -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Règles de gestion</label>
+        <textarea [(ngModel)]="editingAfd.reglesGestion" rows="2"
+                  class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+      </div>
+
+      <!-- Flux nominal -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Flux nominal</label>
+        <textarea [(ngModel)]="editingAfd.fluxNominal" rows="2"
+                  class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+      </div>
+
+      <!-- Cas alternatifs -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Cas alternatifs / erreurs</label>
+        <textarea [(ngModel)]="editingAfd.casAlternatifs" rows="2"
+                  class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+      </div>
+
+      <!-- Statut + Validateur -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Statut</label>
+          <select [(ngModel)]="editingAfd.statut"
+                  class="w-full border rounded-lg p-2.5 text-sm">
+            <option>En cours</option>
+            <option>Validé</option>
+            <option>En attente</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Validateur</label>
+          <input type="text" [(ngModel)]="editingAfd.validateur"
+                 class="w-full border rounded-lg p-2.5 text-sm">
+        </div>
+      </div>
+
+    </div>
+
+    <div class="flex justify-end gap-3 p-6 border-t">
+      <button (click)="showEditAfdModal = false"
+              class="px-4 py-2 border rounded-lg text-sm">Annuler</button>
+      <button (click)="saveEditAfd()"
+              [disabled]="!editingAfd.intitule?.trim()"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+        Enregistrer
+      </button>
+    </div>
+
+  <!-- ═══════════ PANNEAU ÉVALUATION QUALITÉ ═══════════ -->
+  <div *ngIf="showEvalPanel" class="mt-6 bg-white rounded-xl border border-purple-200 shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 bg-purple-50 border-b border-purple-100">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <h3 class="font-semibold text-purple-800">Évaluation de la qualité des exigences</h3>
+      </div>
+      <button (click)="showEvalPanel = false" class="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+    </div>
+
+    <!-- Chargement -->
+    <div *ngIf="evaluating" class="flex items-center justify-center gap-3 py-10 text-purple-600">
+      <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+      </svg>
+      <span class="text-sm">Analyse en cours par l'IA...</span>
+    </div>
+
+    <!-- Résultats -->
+    <div *ngIf="evaluationResult && !evaluating" class="p-6">
+      <!-- Score global -->
+      <div class="flex items-center justify-center mb-6">
+        <div class="text-center">
+          <div class="text-5xl font-bold" [ngClass]="{
+            'text-green-600': evaluationResult.score_global >= 80,
+            'text-yellow-500': evaluationResult.score_global >= 60 && evaluationResult.score_global < 80,
+            'text-red-500': evaluationResult.score_global < 60
+          }">{{ evaluationResult.score_global }}<span class="text-2xl">/100</span></div>
+          <p class="text-sm text-gray-500 mt-1">Score global — {{ evaluationResult.nb_exigences_evaluees }} exigences évaluées</p>
+        </div>
+      </div>
+
+      <!-- Barres de scores -->
+      <div class="grid grid-cols-1 gap-3 mb-6">
+        <ng-container *ngFor="let dim of [
+          {key:'couverture',           label:'Couverture'},
+          {key:'completude',           label:'Complétude'},
+          {key:'precision',            label:'Précision'},
+          {key:'pertinence',           label:'Pertinence'},
+          {key:'qualite_redactionnelle', label:'Qualité rédactionnelle'}
+        ]">
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-gray-600 w-44 shrink-0">{{ dim.label }}</span>
+            <div class="flex-1 bg-gray-100 rounded-full h-2">
+              <div class="h-2 rounded-full transition-all duration-500"
+                   [ngClass]="scoreColor(scoreOf(dim.key))"
+                   [style.width.%]="scoreOf(dim.key)"></div>
+            </div>
+            <span class="text-xs font-semibold text-gray-700 w-8 text-right">{{ scoreOf(dim.key) }}</span>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Points forts / Axes d'amélioration -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-green-50 rounded-lg p-4">
+          <p class="text-xs font-semibold text-green-700 mb-2">Points forts</p>
+          <ul class="space-y-1">
+            <li *ngFor="let p of evaluationResult.points_forts" class="text-xs text-green-800 flex gap-1.5">
+              <span>✓</span><span>{{ p }}</span>
+            </li>
+          </ul>
+        </div>
+        <div class="bg-amber-50 rounded-lg p-4">
+          <p class="text-xs font-semibold text-amber-700 mb-2">Axes d'amélioration</p>
+          <ul class="space-y-1">
+            <li *ngFor="let a of evaluationResult.axes_amelioration" class="text-xs text-amber-800 flex gap-1.5">
+              <span>→</span><span>{{ a }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <p *ngIf="evaluationResult.commentaire" class="mt-4 text-xs text-gray-600 italic border-t pt-3">
+        {{ evaluationResult.commentaire }}
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════ PANNEAU AFDs GÉNÉRÉS PAR IA ═══════════ -->
+  <div *ngIf="showAiAfdsPanel" class="mt-6 bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 bg-blue-50 border-b border-blue-100">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        <h3 class="font-semibold text-blue-800">AFDs générés par l'IA</h3>
+        <span *ngIf="aiAfds.length" class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">{{ aiAfds.length }}</span>
+      </div>
+      <button (click)="showAiAfdsPanel = false" class="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+    </div>
+
+    <!-- Chargement -->
+    <div *ngIf="generatingAiAfds" class="flex items-center justify-center gap-3 py-10 text-blue-600">
+      <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+      </svg>
+      <span class="text-sm">L'IA génère les AFDs depuis les exigences...</span>
+    </div>
+
+    <!-- Cartes AFD -->
+    <div *ngIf="!generatingAiAfds && aiAfds.length" class="p-6 space-y-3">
+      <div *ngFor="let afd of aiAfds"
+           class="border border-gray-200 rounded-xl overflow-hidden">
+        <!-- En-tête carte -->
+        <button (click)="toggleAfd(afd.id)"
+                class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">{{ afd.id }}</span>
+            <span class="text-sm font-semibold text-gray-800">{{ afd.titre }}</span>
+          </div>
+          <svg class="w-4 h-4 text-gray-400 transition-transform"
+               [class.rotate-180]="expandedAfdId === afd.id"
+               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <!-- Détails -->
+        <div *ngIf="expandedAfdId === afd.id" class="px-5 pb-5 border-t border-gray-100 pt-4 space-y-3">
+          <p class="text-sm text-gray-700">{{ afd.description }}</p>
+          <div class="flex flex-wrap gap-1.5">
+            <span *ngFor="let ex of afd.exigences_couvertes"
+                  class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-100">
+              {{ ex }}
+            </span>
+          </div>
+          <div *ngIf="afd.criteres_acceptation?.length" class="text-xs text-gray-500">
+            <p class="font-semibold text-gray-600 mb-1">Critères d'acceptation</p>
+            <ul class="list-disc list-inside space-y-0.5">
+              <li *ngFor="let c of afd.criteres_acceptation">{{ c }}</li>
+            </ul>
+          </div>
+          <div class="flex items-center gap-4 text-xs text-gray-500">
+            <span *ngIf="afd.module_momsoft" class="bg-gray-100 px-2 py-1 rounded">{{ afd.module_momsoft }}</span>
+            <span *ngFor="let a of afd.acteurs" class="bg-green-50 text-green-700 px-2 py-1 rounded">{{ a }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!generatingAiAfds && !aiAfds.length" class="py-8 text-center text-sm text-gray-400">
+      Aucune AFD générée.
+    </div>
+  </div>
+
+  </div>
+</div>
+
+  <!-- ========== MODAL VALIDER AFD ========== -->
+<div *ngIf="showValidateAfdModal && validatingAfd"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white w-[500px] rounded-2xl shadow-xl">
+
+    <!-- Header -->
+    <div class="flex justify-between items-start p-6 border-b">
+      <div>
+        <h2 class="text-lg font-semibold text-green-700">Valider l'AFD</h2>
+        <p class="text-sm text-gray-500 mt-1">
+          {{ validatingAfd.code }} — {{ validatingAfd.intitule }}
+        </p>
+      </div>
+      <button (click)="showValidateAfdModal = false"
+              class="text-gray-400 hover:text-gray-600">✕</button>
+    </div>
+
+    <div class="p-6 space-y-5">
+
+      <!-- Validateur -->
+      <div>
+        <label class="block text-sm font-medium mb-1">
+          Validateur <span class="text-red-500">*</span>
+        </label>
+        <input type="text"
+               [(ngModel)]="validationForm.validateur"
+               placeholder="Nom du validateur"
+               class="w-full border rounded-lg p-2.5 text-sm">
+      </div>
+
+      <!-- Commentaire -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Commentaire</label>
+        <textarea [(ngModel)]="validationForm.commentaire"
+                  rows="3"
+                  placeholder="Commentaire de validation..."
+                  class="w-full border rounded-lg p-2.5 text-sm resize-none"></textarea>
+      </div>
+
+      <!-- Pièce jointe -->
+      <div>
+        <label class="block text-sm font-medium mb-1">Pièce jointe</label>
+        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-400 transition-colors">
+          <input type="file"
+                 id="validation-file"
+                 class="hidden"
+                 (change)="onValidationFileSelected($event)"
+                 accept=".pdf,.doc,.docx,.png,.jpg">
+          <label for="validation-file" class="cursor-pointer">
+            <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+            <p class="text-sm text-gray-500">
+              <span *ngIf="!validationForm.pieceJointe">
+                Cliquez pour ajouter un fichier
+              </span>
+              <span *ngIf="validationForm.pieceJointe" class="text-green-600 font-medium">
+                ✓ {{ validationForm.pieceJointe.name }}
+              </span>
+            </p>
+          </label>
+        </div>
+      </div>
+
+      <!-- Warning -->
+      <div class="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <svg class="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <p class="text-xs text-yellow-700">
+          Une fois validée, l'AFD passera au statut <strong>Validé</strong> et ne pourra plus être modifiée.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-end gap-3 p-6 border-t">
+      <button (click)="showValidateAfdModal = false"
+              class="px-4 py-2 border rounded-lg text-sm">
+        Annuler
+      </button>
+      <button (click)="confirmerValidationAfd()"
+              [disabled]="!validationForm.validateur.trim()"
+              class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Confirmer la validation
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div *ngIf="confirmDialog.open" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-base font-semibold text-gray-900">Confirmation</h3>
+        <p class="text-sm text-gray-600 mt-0.5">{{ confirmDialog.message }}</p>
+      </div>
+    </div>
+    <div class="flex justify-end gap-3">
+      <button (click)="cancelConfirm()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Annuler</button>
+      <button (click)="doConfirm()" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">Supprimer</button>
+    </div>
+  </div>
 </div>

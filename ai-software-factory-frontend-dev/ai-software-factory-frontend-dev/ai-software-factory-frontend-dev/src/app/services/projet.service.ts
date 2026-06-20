@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Projet, CreateProjetRequest } from '../models/projet.model';
+import { Projet, CreateProjetRequest, ProjetDocument } from '../models/projet.model';
 
 @Injectable({
   providedIn: 'root'
@@ -110,6 +110,27 @@ export class ProjetService {
 
   uploadDocuments(projetId: number, files: FormData): Observable<any> {
     return this.http.post(`${this.apiUrl}/${projetId}/documents`, files);
+  }
+
+  getDocuments(projetId: number): Observable<ProjetDocument[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${projetId}/documents`).pipe(
+      map(docs => docs.map(d => ({
+        nom: d.nom || d.filename || d.name || '',
+        typeLabel: d.typeLabel || this.inferDocType(d.nom || d.filename || ''),
+        dateUpload: d.dateUpload || d.uploadedAt
+      })))
+    );
+  }
+
+  deleteDocument(projetId: number, docName: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${projetId}/documents/${encodeURIComponent(docName)}`);
+  }
+
+  private inferDocType(fileName: string): string {
+    const name = fileName.toLowerCase();
+    if (name.includes('cdc')) return 'Cahier des charges';
+    if (name.includes('cr')) return 'Compte-rendu';
+    return 'Document source';
   }
 
   private mapFromDTO(dto: any): Projet {

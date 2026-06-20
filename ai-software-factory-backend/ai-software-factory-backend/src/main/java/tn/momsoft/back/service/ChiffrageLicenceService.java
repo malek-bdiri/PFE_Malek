@@ -41,11 +41,17 @@ public class ChiffrageLicenceService {
         chiffrage.getLicenceLignes().clear();
         chiffrageRepo.saveAndFlush(chiffrage);
 
+        if (req.getLignes() == null || req.getLignes().isEmpty()) {
+            chiffrageRepo.save(chiffrage);
+            return buildSummary(chiffrage, req.getPricingMode() != null ? req.getPricingMode() : "ONESHOT");
+        }
+
         // Construire les nouvelles lignes
         List<ChiffrageLicenceLigne> lignes = req.getLignes().stream().map(dto -> {
 
+            if (dto.getModuleId() == null) return null;
             Module module = moduleRepo.findById(dto.getModuleId())
-                    .orElseThrow(() -> new RuntimeException("Module non trouvé: " + dto.getModuleId()));
+                    .orElseThrow(() -> new IllegalArgumentException("Module non trouvé: " + dto.getModuleId()));
 
             PrixResult prix = resolvePrix(module, dto.getNbUsers(), dto.getPricingMode());
 
@@ -67,7 +73,7 @@ public class ChiffrageLicenceService {
             ligne.setFinalSubtotal(finalSub);
             return ligne;
 
-        }).collect(Collectors.toList());
+        }).filter(java.util.Objects::nonNull).collect(Collectors.toList());
 
         chiffrage.getLicenceLignes().addAll(lignes);
         chiffrageRepo.save(chiffrage);

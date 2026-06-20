@@ -1,5 +1,7 @@
 package tn.momsoft.back.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tn.momsoft.back.entity.Exigence;
@@ -31,11 +33,20 @@ public class ProjetService {
 
     @Transactional
     public Projet createProjet(Projet projet) {
-        if (projet.getExigences() != null && !projet.getExigences().isEmpty()) {
-            for (Exigence exigence : projet.getExigences()) {
-                exigence.setProjet(projet);
+        if (projet.getStatutValidation() == null) {
+            projet.setStatutValidation(Projet.StatutValidation.EN_COURS);
+        }
+
+        // ✅ Lier chaque exigence au projet
+        if (projet.getExigences() != null) {
+            for (Exigence e : projet.getExigences()) {
+                e.setProjet(projet);
+                if (e.getStatut() == null || e.getStatut().isBlank()) {
+                    e.setStatut("En attente");
+                }
             }
         }
+
         return projetRepository.save(projet);
     }
     public java.util.Optional<Projet> getProjetById(Long id) {
@@ -70,6 +81,27 @@ public class ProjetService {
         if (payload.getModeCreation() != null) existing.setModeCreation(payload.getModeCreation());
         return projetRepository.save(existing);
     }
+    @Transactional
+    public Projet replaceExigences(Long projetId, List<Exigence> nouvellesExigences) {
+        Projet projet = projetRepository.findById(projetId)
+                .orElseThrow(() -> new RuntimeException("Projet non trouvé: " + projetId));
+
+        projet.getExigences().clear();
+        projetRepository.saveAndFlush(projet);
+
+        if (nouvellesExigences != null) {
+            for (Exigence e : nouvellesExigences) {
+                e.setId(null);
+                e.setProjet(projet);
+                if (e.getStatut() == null || e.getStatut().isBlank()) {
+                    e.setStatut("En attente");
+                }
+                projet.getExigences().add(e);
+            }
+        }
+        return projetRepository.save(projet);
+    }
+
     @Transactional
     public Projet addExigencesBulk(Long projetId, List<Exigence> exigences) {
         Projet projet = projetRepository.findById(projetId)
@@ -140,8 +172,39 @@ public class ProjetService {
         System.out.println("[ProjetService] Document uploadé pour projet " + projetId + ": " + filename);
     }
 
+//    @Transactional
+//    public void deleteProjet(Long id) {
+//        projetRepository.deleteById(id);
+//    }
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Transactional
     public void deleteProjet(Long id) {
-        projetRepository.deleteById(id);
+        entityManager.createNativeQuery("SET FOREIGN_KEY_CHECKS = 0").executeUpdate();
+        try {
+            // Sous-lignes chiffrage (toutes les variantes)
+            entityManager.createNativeQuery("DELETE FROM chiffrage_hardware_ligne WHERE chiffrage_id IN (SELECT id FROM projet_chiffrage WHERE projet_id = :id)").setParameter("id", id).executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM chiffrage_services_ligne WHERE chiffrage_id IN (SELECT id FROM projet_chiffrage WHERE projet_id = :id)").setParameter("id", id).executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM chiffrage_exigence_ligne WHERE chiffrage_id IN (SELECT id FROM projet_chiffrage WHERE projet_id = :id)").setParameter("id", id).executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM chiffrage_licence_lignes WHERE chiffrage_id IN (SELECT id FROM projet_chiffrage WHERE projet_id = :id)").setParameter("id", id).executeUpdate();
+            // Tables chiffrage principales
+            entityManager.createNativeQuery("DELETE FROM chiffrage_hardware_config WHERE projet_id = :id").setParameter("id", id).executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM projet_chiffrage WHERE projet_id = :id").setParameter("id", id).executeUpdate();
+            // Services et validations
+            entityManager.createNativeQuery("DELETE FROM services_projet WHERE projet_id = :id").setParameter("id", id).executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM validation_requests WHERE projet_id = :id").setParameter("id", id).executeUpdate();
+            // Analyses et blocs fonctionnels
+            entityManager.createNativeQuery("DELETE FROM afds WHERE analysis_id IN (SELECT id FROM functional_analyses WHERE projet_id = :id)").setParameter("id", id).executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM functional_blocks WHERE analysis_id IN (SELECT id FROM functional_analyses WHERE projet_id = :id)").setParameter("id", id).executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM functional_analyses WHERE projet_id = :id").setParameter("id", id).executeUpdate();
+            // Exigences et projet
+            entityManager.createNativeQuery("DELETE FROM exigences WHERE projet_id = :id").setParameter("id", id).executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM projets WHERE id = :id").setParameter("id", id).executeUpdate();
+            entityManager.clear();
+        } finally {
+            entityManager.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1").executeUpdate();
+        }
     }
 }

@@ -20,7 +20,7 @@ public class TestScenarioController {
     private final TestScenarioService testService;
     private final RestTemplate        restTemplate;
 
-    @Value("${rag.api.url:http://localhost:8000}")
+    @Value("${rag.api.base-url:http://localhost:8000}")
     private String ragApiUrl;
 
     // ── POST : générer scénarios depuis AFD via IA ─────────────────────────
