@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { VerifyDocumentResponse, EvaluateResponse, AfdResponse } from '../models/ai.model';
 
 const RAG_API = '/rag-api';
 const SPRING_API = '/api';
@@ -34,7 +35,8 @@ export class RagService {
   }
 
   /**
-   * Upload CdC PDF → Spring Boot /api/ai/generate-exigences → FastAPI → Gemini
+   * Upload CdC PDF → FastAPI /project/generate → Gemini
+   * Appel direct FastAPI (bypass Spring Boot /api/ai/generate-exigences qui retourne 500)
    */
   generateExigences(
     file: File,
@@ -53,12 +55,50 @@ export class RagService {
     form.append('product_name', productName);
     form.append('language', language);
     form.append('top_k', String(topK));
-    return this.http.post(`${SPRING_API}/ai/generate-exigences`, form);
+    return this.http.post(`${RAG_API}/project/generate`, form);
   }
 
   uploadDocument(file: File, category: string): Observable<any> {
     const form = new FormData();
     form.append('file', file, file.name);
     return this.http.post(`${RAG_API}/upload/${category}`, form);
+  }
+
+  verifyDocument(file: File): Observable<VerifyDocumentResponse> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.post<VerifyDocumentResponse>(`${RAG_API}/verify/document`, form);
+  }
+
+  evaluateExigences(
+    cdcText: string,
+    exigences: any[],
+    projectName: string
+  ): Observable<EvaluateResponse> {
+    return this.http.post<EvaluateResponse>(`${RAG_API}/evaluate/exigences`, {
+      cdc_text: cdcText,
+      exigences,
+      project_name: projectName
+    });
+  }
+
+  generateAfdFromExigences(
+    exigences: any[],
+    projectName: string,
+    clientName: string,
+    projectId?: string | number,
+    codeProjet?: string,
+    validateur?: string,
+    topK: number = 4
+  ): Observable<AfdResponse> {
+    return this.http.post<AfdResponse>(`${RAG_API}/generate/afd`, {
+      exigences,
+      project_name: projectName,
+      project_id: projectId ?? null,
+      code_projet: codeProjet ?? null,
+      client_name: clientName,
+      validateur: validateur ?? null,
+      top_k: topK
+    });
   }
 }

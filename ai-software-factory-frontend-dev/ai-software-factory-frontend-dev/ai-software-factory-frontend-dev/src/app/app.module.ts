@@ -62,9 +62,9 @@ import { CalendrierComponent } from './admin/parametres/calendrier/calendrier.co
 import { LicenceComponent } from './admin/parametres/licence/licence.component';
 import { ComposantesTjmComponent } from './admin/parametres/composantes-tjm/composantes-tjm.component';
 
-// Shared
 import { HeaderComponent } from './shared/header/header.component';
 import { ChiffrageLicenceComponent } from './pages/chiffrage-licence/chiffrage-licence.component';
+import { ToastComponent } from './shared/toast/toast.component';
 
 @NgModule({
   declarations: [
@@ -114,6 +114,7 @@ import { ChiffrageLicenceComponent } from './pages/chiffrage-licence/chiffrage-l
     LicenceComponent,
     ComposantesTjmComponent,
     ChiffrageLicenceComponent,
+    ToastComponent,
   ],
   imports: [
     BrowserModule,
